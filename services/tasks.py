@@ -11,6 +11,8 @@ def send_telegram_notification(request_id, category_name, description):
     if not bot_token or not chat_id:
         return "Telegram credentials not found"
         
+    chat_ids = chat_id.split(',')
+    
     message = (
         f"🚨 <b>YANGI BUYURTMA!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -21,15 +23,17 @@ def send_telegram_notification(request_id, category_name, description):
         f"👉 Admin panel orqali usta biriktiring."
     )
     
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = {
-        'chat_id': chat_id,
-        'text': message,
-        'parse_mode': 'HTML'
-    }
-    
-    try:
-        response = requests.post(url, data=payload)
-        return response.json()
-    except Exception as e:
-        return str(e)
+    results = []
+    for cid in chat_ids:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            'chat_id': cid.strip(),
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        try:
+            response = requests.post(url, data=payload)
+            results.append(response.json())
+        except Exception as e:
+            results.append(str(e))
+    return results
