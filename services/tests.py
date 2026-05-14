@@ -1,34 +1,49 @@
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
-from accounts.models import CustomUser
-from .models import Category, ServiceRequest
+from django.test import TestCase
+from unittest.mock import patch, MagicMock
+from services.tasks import send_telegram_notification
+import os
 
-class ServicesTests(APITestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(username='tester', password='testpassword', role='client')
-        self.category = Category.objects.create(name='Santexnika')
-        self.client.force_authenticate(user=self.user)
+class TelegramNotificationTest(TestCase):
 
-    def test_category_list(self):
-        url = reverse('category-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+    @patch('requests.post')
+    @patch('os.getenv')
+    def test_send_to_multiple_admins(self, mock_getenv, mock_post):
+        # 1. Muhit o'zgaruvchilarini soxtalashtiramiz
+        def side_effect(key):
+            values = {
+                'TELEGRAM_BOT_TOKEN': 'test_token',
+                'TELEGRAM_ADMIN_CHAT_ID': '12345,67890' # Ikkita ID
+            }
+            return values.get(key)
+        
+        mock_getenv.side_effect = side_effect
 
-    def test_create_request(self):
-        url = reverse('servicerequest-list')
-        data = {
-            'category': self.category.id,
-            'description': 'Kran buzildi, yordam kerak.'
-        }
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(ServiceRequest.objects.count(), 1)
-        self.assertEqual(ServiceRequest.objects.get().customer, self.user)
+        # 2. Requests javobini soxtalashtiramiz
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"ok": True}
+        mock_post.return_value = mock_response
 
-    def test_unauthenticated_access(self):
-        self.client.logout()
-        url = reverse('servicerequest-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # 3. Funksiyani chaqiramiz
+        results = send_telegram_notification(1, "Santexnika", "Kran buzuldi")
+
+        # 4. TEKSHIRUVLAR (Assertions)
+        # requests.post roppa-rosa 2 marta chaqirilgan bo'lishi kerak
+        self.assertEqual(mock_post.call_count, 2)
+        
+        # Birinchi ID ga yuborilganini tekshirish
+        first_call_args = mock_post.call_args_list[0]
+        self.assertEqual(first_call_args[1]['data']['chat_id'], '12345')
+        
+        # Ikkinchi ID ga yuborilganini tekshirish
+        second_call_args = mock_post.call_args_list[1]
+        self.assertEqual(second_call_args[1]['data']['chat_id'], '67890')
+
+        print("\nTDD Testi: Telegram bildirishnomasi bir nechta adminlarga to'g'ri yuborildi!")
+
+    @patch('os.getenv')
+    def test_missing_credentials(self, mock_getenv):
+        # Ma'lumotlar bo'lmasa xato qaytarishini tekshirish
+        mock_getenv.return_value = None
+        result = send_telegram_notification(1, "Test", "Test")
+        self.assertEqual(result, "Telegram credentials not found")
+        print("TDD Testi: Ma'lumotlar yo'qligida xavfsizlik tekshiruvi ishladi!")

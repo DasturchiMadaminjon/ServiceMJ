@@ -37,47 +37,86 @@ erDiagram
         int parent_id
     }
     
-    SERVICE_REQUEST {
-        int id
-        int customer_id
-        int category_id
-        text description
-        string status "pending/accepted/completed/..."
-        datetime created_at
-    }
-```
+# 🧬 ServiceHub — Genetik Arxitektura va Texnik Spesifikatsiya
+
+Ushbu hujjat ServiceHub loyihasining "ichki dunyosi" — ma'lumotlar oqimi, xavfsizlik qatlamlari va integratsiya mantiqini 100% tiklash uchun mo'ljallangan.
 
 ---
 
-## 2. Komponentlararo Bog'liqlik (Component Map)
+## 1. Ma'lumotlar Bazasi Sxemasi (ERD Mantiqi)
 
-Tizim asinxron va hodisalarga asoslangan (Event-driven) mantiqdan foydalanadi.
+Loyiha PostgreSQL relyatsion MB dan foydalanadi. Asosiy obyektlar bog'liqligi:
 
-- **Accounts App:** Foydalanuvchi shaxsi va huquqlarini boshqaradi (Identity Management).
-- **Services App:** Asosiy biznes mantiq — xizmatlar, profillar va buyurtmalar.
-- **Signals (Dispatcher):** Buyurtma yaratilganda `post_save` signali orqali boshqa modullarga xabar beradi.
-- **Celery Worker:** Og'ir amallarni (Telegram botga xabar yuborish) asosiy oqimni to'xtatmagan holda bajaradi.
+### A. Accounts App (Foydalanuvchilar)
+- **CustomUser**: `AbstractUser` vorisi.
+    - `role`: `client` | `provider` | `admin`
+    - `phone_number`: Unique (E.164 formati)
+    - `is_verified`: SMS orqali tasdiqlash uchun (kelajakda).
+
+### B. Services App (Biznes Mantiq)
+- **Category**: Daraxtsimon (Self-referencing ForeignKey) struktura.
+- **ProviderProfile**: `User` bilan OneToOne.
+    - `skills`: ManyToMany with `Skill`
+    - `portfolio_items`: OneToMany with `Portfolio`
+- **ServiceRequest**: Markaziy tranzaksiya modeli.
+    - `status`: State machine (Pending -> Accepted -> In Progress -> Completed -> Cancelled)
+    - `customer`: ForeignKey (User)
+    - `provider`: ForeignKey (ProviderProfile)
+- **Review**: `ServiceRequest` bilan OneToOne. Faqat `status='completed'` bo'lganda yaratiladi.
 
 ---
 
-## 3. Texnik Standartlar (Genetic Code)
+## 2. Xavfsizlik va Autentifikatsiya (JWT Layer)
 
-Loyihada qo'llanilgan yuqori darajadagi standartlar:
-
-1. **JWT Authentication:** Har bir so'rov xavfsiz token orqali tasdiqlanadi. Token muddati 60 daqiqa, Refresh token esa 24 soat etib belgilangan.
-2. **Environment Isolation:** Barcha maxfiy kalitlar (Secret Key, DB URL, Telegram Token) `.env` faylida saqlanadi va kod ichida ochiq ko'rinmaydi.
-3. **Database Fallback:** Testlar yurgizilganda tizim avtomatik ravishda SQLite bazasiga o'tadi, ishlab chiqarishda (Production) esa PostgreSQL dan foydalanadi.
-4. **CORS Headers:** Frontend ilovalar (React/Vue/Mobile) bilan xavfsiz bog'lanish uchun o'rnatilgan.
-5. **Swagger OpenAPI:** API end-pointlar avtomatik hujjatlashtiriladi, bu esa frontend dasturchilar bilan ishlashni 5 barobar tezlashtiradi.
+Loyiha **Stateless Authentication** tamoyiliga asoslangan.
+- **Header**: `Authorization: Bearer <access_token>`
+- **Refresh Flow**: `api/accounts/token/refresh/` end-point orqali sessiyani uzaytirish.
+- **Role-Based Access Control (RBAC)**:
+    - Mijozlar faqat o'z buyurtmalarini ko'radi.
+    - Ustalar barcha "Pending" buyurtmalarni va faqat o'ziga biriktirilgan buyurtmalarni ko'radi.
+    - Adminlar barcha amallarga ega.
 
 ---
 
-## 4. Scalability (Kengayuvchanlik)
+## 3. Asinxron Tizim (Celery + Redis)
+
+Og'ir vazifalar va bildirishnomalar fonda bajariladi:
+- **Broker**: Redis (`6379-port`).
+- **Worker**: `celery -A config worker -l info`
+- **Logic**: Yangi buyurtma yaratilganda `services.signals` orqali `send_telegram_notification.delay()` vazifasi navbatga qo'yiladi.
+
+---
+
+## 4. Konteynerizatsiya (Docker Blueprint)
+
+Tizim 3 ta asosiy xizmatdan iborat:
+1. **db**: PostgreSQL 15-ALPINE.
+2. **redis**: Redis 7-ALPINE.
+3. **web**: Python 3.10-SLIM based Django app.
+    - Port: `8000`
+    - Gunicorn server (`worker=3`) orqali xizmat ko'rsatadi.
+
+---
+
+## 5. TDD (Test Driven Development) Standarti
+
+Loyiha 100% test qamroviga ega bo'lishi uchun quyidagi qoidalar amal qiladi:
+- **Test Command**: `python manage.py test services.test_api_tdd`
+- **Isolation**: Har bir test o'zining "In-Memory" bazasida ishlaydi.
+- **Mocking**: Tashqi API (Telegram) so'rovlari `unittest.mock` yordamida simulyatsiya qilinadi.
+
+---
+
+## 6. Kelajakdagi Evolyutsiya (DNA Extension)
+- **SMS Gateway**: `is_verified` maydonini ishlatish uchun.
+- **Geolokatsiya**: `PostGIS` orqali eng yaqin ustani topish.
+- **Payment System**: Click/Payme orqali tranzaksiyalarni boshqarish.
+
+---
+*Ushbu arxitektura o'zgarmas (Genetic) qoidalarga asoslangan bo'lib, loyihaning miqyoslanishini kafolatlaydi.*
 
 Loyihani kelajakda qanday kengaytirish mumkin?
 - **Microservices:** Agar foydalanuvchilar soni milliondan oshsa, `accounts` va `services` modullarini alohida servis qilib ajratish mumkin.
 - **Load Balancing:** Nginx orqali bir nechta Django konteynerlariga yuklamani taqsimlash mumkin.
-- **Search Engine:** Qidiruvni tezlashtirish uchun ElasticSearch integratsiyasi uchun joy tayyorlangan.
-
 ---
 *Tayyorladi: ServiceHub.uz Development Team (AI Powered)*
