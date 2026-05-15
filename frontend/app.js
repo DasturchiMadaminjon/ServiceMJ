@@ -659,6 +659,8 @@ function openPortfolioModal() {
 async function savePortfolioItem() {
   const title = document.getElementById('port-title').value.trim();
   const errEl = document.getElementById('port-err');
+  const btn   = document.querySelector('#portfolio-modal .btn-primary');
+  
   if (!title) { showErr(errEl, 'Sarlavha kiritish shart'); return; }
 
   const fd = new FormData();
@@ -670,15 +672,33 @@ async function savePortfolioItem() {
     fd.append('image', imgFile);
   }
 
-  const r = await api(
-    `/services/providers/${state.providerProfileId}/portfolio/`,
-    { method: 'POST', body: fd }
-  );
-  const d = await r.json();
-  if (!r.ok) { showErr(errEl, Object.values(d).flat().join(', ')); return; }
-  toast('Portfolio qo\'shildi!', 'success');
-  closeModal('portfolio-modal');
-  loadMyPortfolio();
+  // Visual feedback
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Yuklanmoqda...';
+  errEl.classList.add('hidden');
+
+  try {
+    const r = await api(
+      `/services/providers/${state.providerProfileId}/portfolio/`,
+      { method: 'POST', body: fd }
+    );
+    const d = await r.json();
+    if (!r.ok) { 
+      showErr(errEl, Object.values(d).flat().join(', ')); 
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return; 
+    }
+    toast('Portfolio qo\'shildi!', 'success');
+    closeModal('portfolio-modal');
+    loadMyPortfolio();
+  } catch (e) {
+    showErr(errEl, 'Server bilan ulanishda xato');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 async function deletePortfolioItem(id) {
