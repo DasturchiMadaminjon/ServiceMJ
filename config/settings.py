@@ -35,7 +35,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,tadbikor.uz,www.tadbikor.uz').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,tadbikor.uz,www.tadbikor.uz,18.194.40.42').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://tadbikor.uz',
