@@ -173,7 +173,7 @@ async function loadHome() {
   const cats = d.results || d;
   const icons = ['🔧','⚡','🪟','🏗️','🎨','🌿','🚿','🔌','🛠️','🏠'];
   document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
-    <div class="cat-card" onclick="loadProviders(1,'-rating')">
+    <div class="cat-card" onclick="loadProviders(1, '-rating', ${c.id})">
       <div class="cat-icon">${icons[i % icons.length]}</div>
       <div class="cat-name">${c.name}</div>
     </div>`).join('') || '<p style="color:var(--text-soft);text-align:center;padding:2rem">Kategoriyalar yuklanmoqda...</p>';
@@ -186,19 +186,29 @@ function searchProviders() {
   searchTimer = setTimeout(() => loadProviders(1, state.providerOrdering), 400);
 }
 
-async function loadProviders(page = 1, ordering = '-rating') {
+async function loadProviders(page = 1, ordering = '-rating', categoryId = null) {
+  showPage('providers');
   state.providerPage = page; state.providerOrdering = ordering;
+  
+  const searchEl = document.getElementById('prov-search');
+  if (categoryId && searchEl) searchEl.value = ''; // Kategoriya tanlanganda qidiruvni tozalash
+
   document.querySelectorAll('.sort-row .chip').forEach(c => {
     c.classList.toggle('active', c.getAttribute('onclick')?.includes(ordering));
   });
-  const q = document.getElementById('prov-search')?.value.trim() || '';
-  const r = await api(`/services/providers/?page=${page}&ordering=${ordering}${q ? '&search=' + encodeURIComponent(q) : ''}`);
+
+  const q = searchEl?.value.trim() || '';
+  let url = `/services/providers/?page=${page}&ordering=${ordering}`;
+  if (q) url += `&search=${encodeURIComponent(q)}`;
+  if (categoryId) url += `&skills__category=${categoryId}`; // Backend'dagi filtrga bog'liqlik
+
+  const r = await api(url);
   if (!r.ok) return;
   const d = await r.json();
   const list = document.getElementById('providers-list');
   list.innerHTML = (d.results || []).map(provCard).join('') ||
-    '<div class="empty"><div class="empty-icon">😔</div>Usta topilmadi</div>';
-  renderPagination('providers-pagination', d, p => loadProviders(p, ordering));
+    '<div class="empty"><div class="empty-icon">😔</div>Bu turdagi usta topilmadi</div>';
+  renderPagination('providers-pagination', d, p => loadProviders(p, ordering, categoryId));
 }
 
 function provCard(p) {
