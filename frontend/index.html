@@ -283,13 +283,18 @@
 <!-- ═══════════════ PORTFOLIO MODAL ═══════════════ -->
 <div id="portfolio-modal" class="modal hidden">
   <div class="modal-box">
-    <h3>Portfolio elementi qo'shish</h3>
-    <input type="hidden" id="port-item-id">
-    <div class="field"><label>Sarlavha *</label><input id="port-title" type="text" placeholder="Masalan: Hammom ta'miri"></div>
-    <div class="field"><label>Tavsif</label><textarea id="port-desc" rows="3" placeholder="Ish haqida qisqacha..."></textarea></div>
+    <h3 id="port-modal-title">Portfolio elementi qo'shish</h3>
+    <div class="field">
+      <label>Sarlavha *</label>
+      <input id="port-title" type="text" placeholder="Masalan: Vanna jihozlarini almashtirish">
+    </div>
+    <div class="field">
+      <label>Tavsif</label>
+      <textarea id="port-desc" placeholder="Ish haqida qisqacha ma'lumot..."></textarea>
+    </div>
     <div class="field">
       <label>Rasm (ixtiyoriy, maks 10 MB)</label>
-      <input type="file" id="port-image" accept="image/*">
+      <input id="port-image" type="file" accept="image/*">
     </div>
     <div id="port-err" class="err hidden"></div>
     <div class="modal-actions">
@@ -297,6 +302,11 @@
       <button class="btn btn-outline" onclick="closeModal('portfolio-modal')">Bekor</button>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════ LIGHTBOX (IMAGE ZOOM) ═══════════════ -->
+<div id="lightbox-modal" class="modal hidden" onclick="closeModal('lightbox-modal')" style="background: rgba(0,0,0,0.9); cursor: zoom-out;">
+  <img id="lightbox-img" src="" style="max-width: 95%; max-height: 95vh; margin: auto; display: block; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5);">
 </div>
 
 <!-- ═══════════════ OTP MODAL ═══════════════ -->

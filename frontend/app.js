@@ -636,6 +636,12 @@ async function saveProviderProfile() {
   toast('Usta profili yangilandi!', 'success');
 }
 
+function openLightbox(url) {
+  if (!url) return;
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox-modal').classList.remove('hidden');
+}
+
 // ─── MY PORTFOLIO (provider) ───────────────────────
 async function loadMyPortfolio() {
   if (!state.providerProfileId) {
@@ -647,8 +653,7 @@ async function loadMyPortfolio() {
     }
   }
   if (!state.providerProfileId) {
-    document.getElementById('my-portfolio-list').innerHTML =
-      '<div class="empty"><div class="empty-icon">👷</div>Avval profilingizni yarating</div>';
+    document.getElementById('portfolio-grid').innerHTML = '<div class="empty">Avval usta profilini yarating!</div>';
     return;
   }
   const r = await api(`/services/providers/${state.providerProfileId}/portfolio/`);
@@ -659,27 +664,45 @@ async function loadMyPortfolio() {
 }
 
 function renderMyPortfolio() {
-  document.getElementById('my-portfolio-list').innerHTML =
-    state.myPortfolioItems.map(item => `
-      <div class="portfolio-item">
+  const grid = document.getElementById('portfolio-grid');
+  grid.innerHTML = state.myPortfolioItems.map(item => `
+    <div class="portfolio-item">
+      <div class="portfolio-img-wrapper" onclick="openLightbox('${item.image_url}')">
         ${item.image_url
           ? `<img class="portfolio-img" src="${item.image_url}" alt="${item.title}">`
           : `<div class="portfolio-img-placeholder">🖼️</div>`}
-        <div class="portfolio-item-body">
-          <div class="portfolio-item-title">${item.title}</div>
-          ${item.description ? `<div class="portfolio-item-desc">${item.description}</div>` : ''}
-          <div class="portfolio-item-actions">
-            <button class="btn btn-sm btn-outline" onclick="deletePortfolioItem(${item.id})">🗑️ O'chirish</button>
-          </div>
+        <div class="portfolio-img-overlay"><i class="fas fa-search-plus"></i> Kattalashtirish</div>
+      </div>
+      <div class="portfolio-item-body">
+        <div class="portfolio-item-title">${item.title}</div>
+        ${item.description ? `<div class="portfolio-item-desc">${item.description}</div>` : ''}
+        <div class="portfolio-item-actions">
+          <button class="btn btn-sm btn-outline" onclick="editPortfolioItem(${item.id})">📝 Tahrirlash</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deletePortfolioItem(${item.id})">🗑️ O'chirish</button>
         </div>
-      </div>`).join('') ||
+      </div>
+    </div>`).join('') ||
     '<div class="empty"><div class="empty-icon">📁</div>Portfolio bo\'sh. Ish namunangizni qo\'shing!</div>';
 }
 
 function openPortfolioModal() {
+  state.editingPortfolioId = null;
+  document.getElementById('port-modal-title').textContent = "Portfolio elementi qo'shish";
   document.getElementById('port-title').value = '';
   document.getElementById('port-desc').value  = '';
   document.getElementById('port-image').value = '';
+  document.getElementById('port-err').classList.add('hidden');
+  document.getElementById('portfolio-modal').classList.remove('hidden');
+}
+
+function editPortfolioItem(id) {
+  const item = state.myPortfolioItems.find(i => i.id === id);
+  if (!item) return;
+  state.editingPortfolioId = id;
+  document.getElementById('port-modal-title').textContent = "Elementni tahrirlash";
+  document.getElementById('port-title').value = item.title;
+  document.getElementById('port-desc').value  = item.description || '';
+  document.getElementById('port-image').value = ''; // Yangi rasm ixtiyoriy
   document.getElementById('port-err').classList.add('hidden');
   document.getElementById('portfolio-modal').classList.remove('hidden');
 }
