@@ -441,6 +441,8 @@ window.sendOTP = async function() {
       mockEl.textContent = `📲 Simulyatsiya: SMS kod - ${d.mock_code}`;
       mockEl.style.display = 'block';
       toast('Tasdiqlash kodi yuborildi!', 'success');
+      // Fallback: Agar modalda ko'rinmasa, alert bilan chiqarish
+      alert(`DIQQAT: Tasdiqlash kodi - ${d.mock_code}`);
     } else {
       mockEl.style.display = 'none';
       toast('Tasdiqlash kodi yuborildi!', 'success');
