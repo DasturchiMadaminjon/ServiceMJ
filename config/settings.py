@@ -1,8 +1,20 @@
 import os
 import sys
 from pathlib import Path
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 from datetime import timedelta
 from dotenv import load_dotenv
+
+sentry_sdk.init(
+    dsn="https://a3a03f31e0222b04c72b85136cad1350@o4511394095562752.ingest.de.sentry.io/4511394140717136",
+    integrations=[DjangoIntegration()],
+    # If you wish to associate users to errors (recommended)
+    send_default_pii=True,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+)
 
 load_dotenv()
 
