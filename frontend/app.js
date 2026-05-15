@@ -408,32 +408,60 @@ async function loadProfile() {
   if (!r.ok) return;
   const u = await r.json();
   state.user = u;
-  document.getElementById('p-username').value = u.username;
+  document.getElementById('p-username').value = u.username || '';
   document.getElementById('p-email').value    = u.email || '';
   document.getElementById('p-phone').value    = u.phone_number || '';
-  document.getElementById('p-role').value     =
-    u.role === 'client' ? 'Mijoz' : u.role === 'provider' ? 'Usta' : 'Admin';
+  document.getElementById('p-role').value     = u.role;
+  document.getElementById('p-password').value = ''; // Parol maydonini tozalash
+  
   document.getElementById('profile-avatar').src = u.avatar_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=6366f1&color=fff&size=80`;
+  
   if (u.role === 'provider') {
     document.getElementById('provider-profile-section').classList.remove('hidden');
     loadProviderProfile();
+  } else {
+    document.getElementById('provider-profile-section').classList.add('hidden');
   }
 }
 
 async function saveProfile() {
   const body = {
+    username:     document.getElementById('p-username').value.trim(),
     email:        document.getElementById('p-email').value.trim(),
     phone_number: document.getElementById('p-phone').value.trim(),
+    role:         document.getElementById('p-role').value,
   };
+  
+  const pass = document.getElementById('p-password').value;
+  if (pass) {
+    if (pass.length < 8) {
+      toast('Parol kamida 8 ta belgidan iborat bo\'lishi kerak', 'error');
+      return;
+    }
+    body.password = pass;
+  }
+
   const errEl = document.getElementById('p-err');
   const okEl  = document.getElementById('p-ok');
   errEl.classList.add('hidden'); okEl.classList.add('hidden');
+  
   const r = await api('/accounts/profile/', { method: 'PATCH', body: JSON.stringify(body) });
   const d = await r.json();
+  
   if (!r.ok) { showErr(errEl, Object.values(d).flat().join(', ')); return; }
-  okEl.textContent = '✅ Profil saqlandi!'; okEl.classList.remove('hidden');
+  
+  state.user = d;
+  localStorage.setItem('user', JSON.stringify(d));
+  
+  document.getElementById('p-password').value = '';
+  okEl.textContent = '✅ Ma\'lumotlar saqlandi!'; okEl.classList.remove('hidden');
   toast('Profil yangilandi!', 'success');
+  
+  // Navbarni va rollarni qayta yuklash
+  initApp();
+  // Agar rol o'zgargan bo'lsa, profil sahifasini qayta yuklash (Usta bo'limi chiqishi uchun)
+  loadProfile();
 }
 
 async function uploadAvatar(input) {

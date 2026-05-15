@@ -33,14 +33,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
 
     class Meta:
         model  = CustomUser
         fields = (
             'id', 'username', 'email', 'role',
-            'phone_number', 'is_verified', 'avatar', 'avatar_url'
+            'phone_number', 'is_verified', 'avatar', 'avatar_url', 'password'
         )
-        read_only_fields = ('id', 'role', 'is_verified')
+        read_only_fields = ('id', 'username', 'is_verified')
         extra_kwargs = {'avatar': {'write_only': True, 'required': False}}
 
     def get_avatar_url(self, obj):
@@ -58,3 +59,14 @@ class UserSerializer(serializers.ModelSerializer):
                 f"Rasm hajmi {mb:.1f} MB. Maksimal ruxsat etilgan hajm: 10 MB."
             )
         return value
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance

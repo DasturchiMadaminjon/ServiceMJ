@@ -195,13 +195,19 @@
       </div>
     </div>
 
-    <div class="field"><label>Foydalanuvchi nomi</label><input id="p-username" type="text" readonly class="readonly-field"></div>
-    <div class="field"><label>Rol</label><input id="p-role" type="text" readonly class="readonly-field"></div>
+    <div class="field"><label>Ism / Familiya</label><input id="p-username" type="text" placeholder="To'liq ismingiz..."></div>
+    <div class="field"><label>Rol</label>
+      <select id="p-role">
+        <option value="client">Mijoz — xizmat olaman</option>
+        <option value="provider">Usta — xizmat beraman</option>
+      </select>
+    </div>
     <div class="field"><label>Email</label><input id="p-email" type="email"></div>
     <div class="field"><label>Telefon</label><input id="p-phone" type="text"></div>
+    <div class="field"><label>Yangi parol (o'zgartirish ixtiyoriy)</label><input id="p-password" type="password" placeholder="••••••••"></div>
     <div id="p-err" class="err hidden"></div>
     <div id="p-ok" class="ok hidden"></div>
-    <button class="btn btn-primary" onclick="saveProfile()">Saqlash</button>
+    <button class="btn btn-primary" onclick="saveProfile()">Ma'lumotlarni saqlash</button>
 
     <!-- Usta profili bo'limi -->
     <div id="provider-profile-section" class="hidden">
