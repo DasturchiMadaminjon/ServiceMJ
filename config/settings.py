@@ -45,6 +45,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -201,3 +202,53 @@ SWAGGER_SETTINGS = {
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
 MAX_UPLOAD_SIZE             = 10 * 1024 * 1024   # serializer uchun
+
+# JAZZMIN SETTINGS
+JAZZMIN_SETTINGS = {
+    "site_title": "ServiceHub Admin",
+    "site_header": "ServiceHub",
+    "site_brand": "ServiceHub Admin",
+    "welcome_sign": "ServiceHub Boshqaruv Paneliga Xush Kelibsiz",
+    "copyright": "ServiceHub Ltd",
+    "search_model": ["accounts.CustomUser", "services.ServiceRequest"],
+    "user_avatar": "avatar",
+    "topmenu_links": [
+        {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Saytga o'tish", "url": "/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "accounts.CustomUser": "fas fa-users",
+        "auth.Group": "fas fa-users-cog",
+        "services.ServiceRequest": "fas fa-tasks",
+        "services.Category": "fas fa-list",
+        "services.ProviderProfile": "fas fa-user-tie",
+        "services.Review": "fas fa-star",
+    },
+    "order_with_respect_to": ["accounts", "services"],
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+}
+
+JAZZMIN_UI_CONFIG = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-primary",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_fixed": True,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+}
