@@ -45,10 +45,11 @@ def notify_new_service_request(request_id: int):
     from services.models import ServiceRequest
     try:
         req = ServiceRequest.objects.select_related('customer', 'category').get(id=request_id)
+        cat_name = req.category.name if req.category else "Noma'lum"
         msg = (
             f"🔔 <b>Yangi xizmat so'rovi #{req.id}</b>\n"
             f"👤 Mijoz: {req.customer.username}\n"
-            f"📂 Kategoriya: {req.category.name if req.category else 'Noma\'lum'}\n"
+            f"📂 Kategoriya: {cat_name}\n"
             f"📝 Tavsif: {req.description[:200]}\n"
             f"💰 Byudjet: {req.budget or 'Kelishiladi'}"
         )
@@ -70,11 +71,12 @@ def notify_status_changed(request_id: int, old_status: str, new_status: str):
             'cancelled':   '❌',
         }
         emoji = status_emoji.get(new_status, '📋')
+        prov_name = req.provider.username if req.provider else "Yo'q"
         msg = (
             f"{emoji} <b>So'rov #{req.id} holati o'zgardi</b>\n"
             f"📊 {old_status} → {new_status}\n"
             f"👤 Mijoz: {req.customer.username}\n"
-            f"🔧 Usta: {req.provider.username if req.provider else 'Yo\'q'}"
+            f"🔧 Usta: {prov_name}"
         )
         send_telegram_notification.delay(msg)
     except ServiceRequest.DoesNotExist:
