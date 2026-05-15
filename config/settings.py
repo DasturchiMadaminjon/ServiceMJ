@@ -44,6 +44,11 @@ CSRF_TRUSTED_ORIGINS = [
     'http://www.tadbikor.uz',
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.PhoneOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 INSTALLED_APPS = [
     "jazzmin",
     "django.contrib.admin",
