@@ -8,10 +8,13 @@ class PhoneOrUsernameBackend(ModelBackend):
     """
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            # Username yoki telefon raqami bo'yicha qidirish
-            user = CustomUser.objects.get(Q(username=username) | Q(phone_number=username))
-            if user.check_password(password):
+            # Username (iexact - case-insensitive) yoki telefon raqami bo'yicha qidirish
+            user = CustomUser.objects.filter(
+                Q(username__iexact=username) | Q(phone_number=username)
+            ).first()
+            
+            if user and user.check_password(password):
                 return user
-        except CustomUser.DoesNotExist:
+        except Exception:
             return None
         return None
