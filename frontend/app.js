@@ -414,6 +414,10 @@ async function loadProfile() {
   document.getElementById('p-role').value     = u.role;
   document.getElementById('p-password').value = ''; // Parol maydonini tozalash
   
+  // Tasdiqlash holatini ko'rsatish
+  document.getElementById('verify-section').classList.toggle('hidden', u.is_verified);
+  document.getElementById('verified-section').classList.toggle('hidden', !u.is_verified);
+
   document.getElementById('profile-avatar').src = u.avatar_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=6366f1&color=fff&size=80`;
   
@@ -422,6 +426,43 @@ async function loadProfile() {
     loadProviderProfile();
   } else {
     document.getElementById('provider-profile-section').classList.add('hidden');
+  }
+}
+
+async function sendOTP() {
+  const r = await api('/accounts/send-otp/', { method: 'POST' });
+  if (r.ok) {
+    toast('Kod yuborildi!', 'success');
+    document.getElementById('otp-code').value = '';
+    document.getElementById('otp-err').classList.add('hidden');
+    document.getElementById('otp-modal').classList.remove('hidden');
+  } else {
+    toast('Xatolik yuz berdi', 'error');
+  }
+}
+
+async function verifyOTP() {
+  const code = document.getElementById('otp-code').value.trim();
+  const errEl = document.getElementById('otp-err');
+  errEl.classList.add('hidden');
+  
+  if (code.length !== 4) {
+    showErr(errEl, '4 xonali kodni kiriting');
+    return;
+  }
+  
+  const r = await api('/accounts/verify-otp/', { 
+    method: 'POST', 
+    body: JSON.stringify({ code }) 
+  });
+  const d = await r.json();
+  
+  if (r.ok) {
+    toast('Muvaffaqiyatli tasdiqlandi!', 'success');
+    closeModal('otp-modal');
+    loadProfile(); // Profilni yangilash (yashil belgi chiqishi uchun)
+  } else {
+    showErr(errEl, d.detail || 'Kod noto\'g\'ri');
   }
 }
 
