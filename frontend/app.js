@@ -436,9 +436,13 @@ window.sendOTP = async function() {
   if (r.ok) {
     console.log("OTP sent successfully", d);
     // Simulyatsiya uchun kodni ekranda ko'rsatish
+    const mockEl = document.getElementById('otp-mock-display');
     if (d.mock_code) {
-      toast(`📲 SMS Keldi! Tasdiqlash kodi: ${d.mock_code}`, 'info');
+      mockEl.textContent = `📲 Simulyatsiya: SMS kod - ${d.mock_code}`;
+      mockEl.style.display = 'block';
+      toast('Tasdiqlash kodi yuborildi!', 'success');
     } else {
+      mockEl.style.display = 'none';
       toast('Tasdiqlash kodi yuborildi!', 'success');
     }
     document.getElementById('otp-code').value = '';
