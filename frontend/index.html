@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiceHub — Ustalar Platformasi</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar" class="hidden">
+  <div class="nav-inner">
+    <a class="logo" href="#" onclick="showPage('home')">⚡ ServiceHub</a>
+    <div class="nav-links" id="nav-links">
+      <a href="#" onclick="showPage('providers')">Ustalar</a>
+      <span id="nav-client" class="hidden"><a href="#" onclick="showPage('my-requests')">So'rovlarim</a></span>
+      <span id="nav-client2" class="hidden"><a href="#" onclick="showPage('create-request')">+ Buyurtma</a></span>
+      <span id="nav-provider" class="hidden"><a href="#" onclick="showPage('available-requests')">Buyurtmalar</a></span>
+      <span id="nav-provider2" class="hidden"><a href="#" onclick="showPage('my-portfolio')">Portfolio</a></span>
+      <span id="nav-admin" class="hidden"><a href="#" onclick="showPage('admin-stats')">Dashboard</a></span>
+      <a href="#" onclick="showPage('profile')">Profil</a>
+      <button class="btn btn-sm btn-outline" onclick="logout()">Chiqish</button>
+    </div>
+    <button class="burger" onclick="toggleMenu()">☰</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div id="page-auth" class="page-center">
+  <div class="auth-box">
+    <div class="logo-big">⚡ ServiceHub</div>
+    <p class="auth-sub">Ustalar va mijozlarni bog'lovchi platforma</p>
+    <div class="tabs">
+      <button id="tab-login" class="tab active" onclick="switchTab('login')">Kirish</button>
+      <button id="tab-reg" class="tab" onclick="switchTab('register')">Ro'yxatdan o'tish</button>
+    </div>
+
+    <!-- Login -->
+    <div id="form-login">
+      <div class="field"><label>Foydalanuvchi nomi</label><input id="l-username" type="text" placeholder="username"></div>
+      <div class="field"><label>Parol</label><input id="l-password" type="password" placeholder="••••••••"></div>
+      <div id="l-err" class="err hidden"></div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Kirish</button>
+    </div>
+
+    <!-- Register -->
+    <div id="form-register" class="hidden">
+      <div class="field"><label>Foydalanuvchi nomi</label><input id="r-username" type="text" placeholder="username"></div>
+      <div class="field"><label>Telefon</label><input id="r-phone" type="text" placeholder="998901234567"></div>
+      <div class="field"><label>Email (ixtiyoriy)</label><input id="r-email" type="email" placeholder="email@gmail.com"></div>
+      <div class="field"><label>Rol</label>
+        <select id="r-role">
+          <option value="client">Mijoz — xizmat olaman</option>
+          <option value="provider">Usta — xizmat beraman</option>
+        </select>
+      </div>
+      <div class="field"><label>Parol</label><input id="r-password" type="password" placeholder="kamida 8 ta belgi"></div>
+      <div id="r-err" class="err hidden"></div>
+      <button class="btn btn-primary btn-full" onclick="doRegister()">Ro'yxatdan o'tish</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="page-home" class="page hidden">
+  <div class="hero">
+    <h1 class="hero-title">Ishonchli ustani toping</h1>
+    <p class="hero-sub">Santexnik, elektrik, duradgor — bir marta so'rang, eng yaxshisi qaytsin</p>
+    <div class="hero-btns">
+      <span id="home-client-btn"><button class="btn btn-primary btn-lg" onclick="showPage('create-request')">Buyurtma berish</button></span>
+      <button class="btn btn-outline btn-lg" onclick="showPage('providers')">Ustalarni ko'rish</button>
+    </div>
+  </div>
+  <div id="home-categories" class="categories-grid"></div>
+</div>
+
+<!-- ═══════════════ PROVIDERS ═══════════════ -->
+<div id="page-providers" class="page hidden">
+  <div class="page-header">
+    <h2>Ustalar</h2>
+    <input id="prov-search" type="text" placeholder="Ism yoki ko'nikma bo'yicha qidiring..." oninput="searchProviders()">
+  </div>
+  <div class="sort-row">
+    <span>Saralash:</span>
+    <button class="chip active" onclick="loadProviders(1,'-rating')">⭐ Reyting</button>
+    <button class="chip" onclick="loadProviders(1,'-experience_years')">📅 Tajriba</button>
+  </div>
+  <div id="providers-list" class="cards-grid"></div>
+  <div id="providers-pagination"></div>
+</div>
+
+<!-- ═══════════════ PROVIDER DETAIL ═══════════════ -->
+<div id="page-provider-detail" class="page hidden">
+  <button class="btn btn-sm btn-outline back-btn" onclick="showPage('providers')">← Orqaga</button>
+  <div id="provider-detail-content"></div>
+</div>
+
+<!-- ═══════════════ MY REQUESTS (client) ═══════════════ -->
+<div id="page-my-requests" class="page hidden">
+  <div class="page-header">
+    <h2>Mening so'rovlarim</h2>
+    <button class="btn btn-primary btn-sm" onclick="showPage('create-request')">+ Yangi</button>
+  </div>
+  <div class="filter-row">
+    <button class="chip active" onclick="filterMyRequests('')">Barchasi</button>
+    <button class="chip" onclick="filterMyRequests('pending')">Kutilmoqda</button>
+    <button class="chip" onclick="filterMyRequests('accepted')">Qabul qilindi</button>
+    <button class="chip" onclick="filterMyRequests('in_progress')">Jarayonda</button>
+    <button class="chip" onclick="filterMyRequests('completed')">Tugallandi</button>
+    <button class="chip" onclick="filterMyRequests('cancelled')">Bekor</button>
+  </div>
+  <div id="my-requests-list" class="cards-grid"></div>
+  <div id="my-requests-pagination"></div>
+</div>
+
+<!-- ═══════════════ CREATE REQUEST ═══════════════ -->
+<div id="page-create-request" class="page hidden">
+  <div class="form-page">
+    <h2>Yangi buyurtma</h2>
+    <div class="field"><label>Kategoriya</label>
+      <select id="cr-category"><option value="">— tanlang —</option></select>
+    </div>
+    <div class="field"><label>Tavsif</label>
+      <textarea id="cr-desc" placeholder="Muammoni batafsil yozing..." rows="4"></textarea>
+    </div>
+    <div class="field"><label>Manzil</label>
+      <input id="cr-address" type="text" placeholder="Shahar, tuman, ko'cha">
+    </div>
+    <div class="field"><label>Byudjet (so'm, ixtiyoriy)</label>
+      <input id="cr-budget" type="number" placeholder="Masalan: 200000">
+    </div>
+    <div id="cr-err" class="err hidden"></div>
+    <button class="btn btn-primary btn-full" onclick="createRequest()">Yuborish</button>
+  </div>
+</div>
+
+<!-- ═══════════════ AVAILABLE REQUESTS (provider) ═══════════════ -->
+<div id="page-available-requests" class="page hidden">
+  <div class="page-header"><h2>Buyurtmalar</h2></div>
+  <div class="filter-row">
+    <button class="chip active" onclick="filterProviderRequests('pending')">🔔 Yangi</button>
+    <button class="chip" onclick="filterProviderRequests('accepted')">✅ Qabul</button>
+    <button class="chip" onclick="filterProviderRequests('in_progress')">🔧 Jarayonda</button>
+    <button class="chip" onclick="filterProviderRequests('completed')">🎉 Tugallandi</button>
+  </div>
+  <div id="available-requests-list" class="cards-grid"></div>
+  <div id="available-requests-pagination"></div>
+</div>
+
+<!-- ═══════════════ PROFILE ═══════════════ -->
+<div id="page-profile" class="page hidden">
+  <div class="form-page">
+    <h2>Profilim</h2>
+
+    <!-- Avatar -->
+    <div class="avatar-section">
+      <img id="profile-avatar" src="https://ui-avatars.com/api/?name=U&background=6366f1&color=fff&size=100" class="avatar-img">
+      <div class="avatar-actions">
+        <label class="btn btn-sm btn-outline" for="avatar-input">📷 Rasm yuklash</label>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+        <small class="avatar-hint">JPEG, PNG, WebP · Maksimal 10 MB</small>
+      </div>
+      <div id="avatar-progress" class="hidden">
+        <div class="progress-bar"><div id="avatar-bar" class="progress-fill"></div></div>
+        <small id="avatar-status">Yuklanmoqda...</small>
+      </div>
+    </div>
+
+    <div class="field"><label>Foydalanuvchi nomi</label><input id="p-username" type="text" readonly class="readonly-field"></div>
+    <div class="field"><label>Rol</label><input id="p-role" type="text" readonly class="readonly-field"></div>
+    <div class="field"><label>Email</label><input id="p-email" type="email"></div>
+    <div class="field"><label>Telefon</label><input id="p-phone" type="text"></div>
+    <div id="p-err" class="err hidden"></div>
+    <div id="p-ok" class="ok hidden"></div>
+    <button class="btn btn-primary" onclick="saveProfile()">Saqlash</button>
+
+    <!-- Usta profili bo'limi -->
+    <div id="provider-profile-section" class="hidden">
+      <hr style="margin:1.5rem 0">
+      <h3>Usta profili</h3>
+      <div class="field"><label>Bio</label><textarea id="pp-bio" rows="3" placeholder="O'zingiz haqida yozing..."></textarea></div>
+      <div class="field"><label>Tajriba (yil)</label><input id="pp-exp" type="number" min="0" max="50"></div>
+      <div class="field"><label>Soatlik narx (so'm)</label><input id="pp-rate" type="number" min="0"></div>
+      <div class="field">
+        <label>Ko'nikmalar</label>
+        <div id="pp-skills-selected" class="skill-tags" style="margin-bottom:.5rem"></div>
+        <select id="pp-skills-select" onchange="addSkillFromSelect(this)">
+          <option value="">— ko'nikma qo'shish —</option>
+        </select>
+      </div>
+      <div id="pp-err" class="err hidden"></div>
+      <div id="pp-ok" class="ok hidden"></div>
+      <button class="btn btn-primary" onclick="saveProviderProfile()">Profilni saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MY PORTFOLIO (provider) ═══════════════ -->
+<div id="page-my-portfolio" class="page hidden">
+  <div class="page-header">
+    <h2>Mening Portfoliom</h2>
+    <button class="btn btn-primary btn-sm" onclick="openPortfolioModal()">+ Qo'shish</button>
+  </div>
+  <div id="my-portfolio-list" class="portfolio-grid"></div>
+</div>
+
+<!-- ═══════════════ ADMIN DASHBOARD ═══════════════ -->
+<div id="page-admin-stats" class="page hidden">
+  <h2>Admin Dashboard</h2>
+  <div id="admin-stats-content" class="stats-grid"></div>
+  <h3 style="margin:1.5rem 0 .8rem">Barcha so'rovlar</h3>
+  <div id="admin-requests-list" class="cards-grid"></div>
+  <div id="admin-requests-pagination"></div>
+</div>
+
+<!-- ═══════════════ REVIEW MODAL ═══════════════ -->
+<div id="review-modal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Sharh yozish</h3>
+    <input type="hidden" id="review-req-id">
+    <div class="field">
+      <label>Reyting</label>
+      <div class="stars" id="star-picker">
+        <span onclick="setStar(1)">★</span><span onclick="setStar(2)">★</span>
+        <span onclick="setStar(3)">★</span><span onclick="setStar(4)">★</span>
+        <span onclick="setStar(5)">★</span>
+      </div>
+      <input type="hidden" id="review-rating" value="0">
+    </div>
+    <div class="field"><label>Izoh</label><textarea id="review-comment" rows="3" placeholder="Usta haqida..."></textarea></div>
+    <div id="rev-err" class="err hidden"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitReview()">Yuborish</button>
+      <button class="btn btn-outline" onclick="closeModal('review-modal')">Bekor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PORTFOLIO MODAL ═══════════════ -->
+<div id="portfolio-modal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Portfolio elementi qo'shish</h3>
+    <input type="hidden" id="port-item-id">
+    <div class="field"><label>Sarlavha *</label><input id="port-title" type="text" placeholder="Masalan: Hammom ta'miri"></div>
+    <div class="field"><label>Tavsif</label><textarea id="port-desc" rows="3" placeholder="Ish haqida qisqacha..."></textarea></div>
+    <div class="field">
+      <label>Rasm (ixtiyoriy, maks 10 MB)</label>
+      <input type="file" id="port-image" accept="image/*">
+    </div>
+    <div id="port-err" class="err hidden"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="savePortfolioItem()">Saqlash</button>
+      <button class="btn btn-outline" onclick="closeModal('portfolio-modal')">Bekor</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

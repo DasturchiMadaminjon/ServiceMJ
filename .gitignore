@@ -29,3 +29,10 @@ ENV/
 .vscode/
 *.swp
 *.swo
+test_manual.sqlite3
+*.sqlite3
+.env
+!.env.example
+node_modules/
+frontend/dist/
+frontend/.env

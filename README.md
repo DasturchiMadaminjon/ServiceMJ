@@ -16,19 +16,18 @@ O‘zbekistonda ishonchli ustani topish ko'p hollarda "og‘zaki tavsiya" yoki i
 
 **ServiceHub.uz** ushbu jarayonni raqamlashtiradi:
 - **Ustalar uchun:** Doimiy buyurtmalar oqimi, professional profil va reyting tizimi.
-- **Mijoz uchun:** Hududiy yaqinlik, sharhlar va shaffof narxlar asosida tezkor tanlov.
+- **Mijoz for:** Hududiy yaqinlik, sharhlar va shaffof narxlar asosida tezkor tanlov.
 
 ---
 
-## ✨ Asosiy Funksional Imkoniyatlar (MVP+)
+## ✨ Asosiy Funksional Imkoniyatlar (MVP)
 
 - [x] **Xavfsiz Autentifikatsiya:** JWT (JSON Web Token) orqali professional himoya.
 - [x] **Ikki tomonlama profillar:** Mijoz (Customer) va Usta (Provider) rollari.
-- [x] **Portfolio & Skills:** Ustalar o'z ishlarini rasmlar bilan ko'rsatishi va mahoratlarini boshqarishi.
-- [x] **Buyurtmalar tizimi:** So'rov yuborish va holatni boshqarish (Accept/Complete).
-- [x] **Role-Based Permissions:** Ustalar buyurtma yarata olmaydi, mijozlar esa birovning buyurtmasini qabul qila olmaydi.
-- [x] **Reyting va Sharhlar:** Faqat yakunlangan buyurtmalar uchun (TDD bilan tasdiqlangan).
-- [x] **Celery Notifications:** Fondagi bildirishnomalar tizimi.
+- [x] **Portfolio & Skills:** Ustalar o'z ishlarini rasmlar bilan ko'rsatishi va narxlarini belgilashi.
+- [x] **Buyurtmalar tizimi:** So'rov yuborish, holatni kuzatish (Pending → Accepted → In Progress → Completed).
+- [x] **Reyting va Sharhlar:** Xizmat sifatini baholashning shaffof tizimi.
+- [x] **Admin Panel:** Moderatsiya va boshqaruv uchun qulay interfeys.
 
 ---
 
@@ -79,44 +78,42 @@ sequenceDiagram
 
 ---
 
-## 🚀 O'rnatish va Ishga tushirish
+## 🚀 O'rnatish va Ishga tushirish (Local Docker)
 
-### A. Local (Docker bilan)
-1. `.env` faylini sozlang.
-2. `docker-compose up --build`
-3. `docker-compose exec web python manage.py migrate`
+Loyihani o'z kompyuteringizda yurgizish uchun quyidagi qadamlarni bajaring:
 
-### B. AWS EC2 (Professional Deployment)
-1. **Serverni tayyorlash:**
+1. **Repozitoriyani klonlang:**
    ```bash
-   sudo dnf update -y
-   sudo dnf install git docker -y
-   sudo systemctl start docker
+   git clone https://github.com/username/servicehub.git
+   cd servicehub
    ```
-2. **Loyihani yuklash:**
+
+2. **Muhit o'zgaruvchilarini sozlang:**
+   `.env.example` faylini `.env` deb nomlang va sozlamalarni kiriting.
+
+3. **Docker orqali ishga tushiring:**
    ```bash
-   git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
-   cd ServiceHub
+   docker-compose up --build
    ```
-3. **Ishga tushirish:**
+
+4. **Migratsiyalarni bajaring:**
    ```bash
-   docker-compose -f docker-compose.yml up -d
+   docker-compose exec web python manage.py migrate
    ```
 
 ---
 
-## 🧪 Sifat Nazorati (TDD)
+## 📑 API Hujjatlari (Swagger)
 
-Loyihaning barcha biznes mantiqi avtomatlashtirilgan testlar bilan himoyalangan.
-```bash
-python manage.py test services.test_api_tdd
-```
+Loyiha ishga tushgandan so'ng, barcha API end-point'larni quyidagi manzillar orqali ko'rish mumkin:
+- **Swagger UI:** `http://localhost:8000/swagger/`
+- **ReDoc:** `http://localhost:8000/redoc/`
 
 ---
 
-## 📑 API Hujjatlari
-- **Swagger:** `http://SERVER_IP/swagger/`
-- **ReDoc:** `http://SERVER_IP/redoc/`
+## ☁️ Deployment (AWS EC2)
+
+Loyiha AWS EC2 serverida Docker-compose yordamida joylashtirilgan. Nginx konteyneri SSL sertifikatlari va trafikni boshqarish uchun mas'uldir.
 
 ---
 

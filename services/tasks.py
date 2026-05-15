@@ -1,39 +1,81 @@
-import os
+import logging
 import requests
 from celery import shared_task
 from django.conf import settings
 
-@shared_task
-def send_telegram_notification(request_id, category_name, description):
-    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-    chat_id = os.getenv('TELEGRAM_ADMIN_CHAT_ID')
-    
-    if not bot_token or not chat_id:
-        return "Telegram credentials not found"
-        
-    chat_ids = chat_id.split(',')
-    
-    message = (
-        f"🚨 <b>YANGI BUYURTMA!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 ID: #{request_id}\n"
-        f"📂 Kategoriya: {category_name}\n"
-        f"📝 Tavsif: {description}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"👉 Admin panel orqali usta biriktiring."
-    )
-    
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_telegram_notification(self, message: str):
+    """Telegramda adminlarga bildirishnoma yuborish."""
+    token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+    chat_ids = getattr(settings, 'TELEGRAM_ADMIN_CHAT_IDS', [])
+
+    if not token or not chat_ids:
+        logger.warning("Telegram sozlamalari topilmadi. Xabar yuborilmadi.")
+        return {"status": "skipped", "reason": "no credentials"}
+
     results = []
-    for cid in chat_ids:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {
-            'chat_id': cid.strip(),
-            'text': message,
-            'parse_mode': 'HTML'
-        }
+    for chat_id in chat_ids:
         try:
-            response = requests.post(url, data=payload)
-            results.append(response.json())
-        except Exception as e:
-            results.append(str(e))
-    return results
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            resp = requests.post(
+                url,
+                json={'chat_id': chat_id, 'text': message, 'parse_mode': 'HTML'},
+                timeout=10
+            )
+            resp.raise_for_status()
+            results.append({'chat_id': chat_id, 'status': 'sent'})
+            logger.info(f"Telegram xabar yuborildi: {chat_id}")
+        except requests.RequestException as exc:
+            logger.error(f"Telegram xato ({chat_id}): {exc}")
+            results.append({'chat_id': chat_id, 'status': 'error', 'error': str(exc)})
+            try:
+                self.retry(exc=exc)
+            except self.MaxRetriesExceededError:
+                logger.error(f"Maksimal qayta urinishlar tugadi: {chat_id}")
+
+    return {"status": "done", "results": results}
+
+
+@shared_task
+def notify_new_service_request(request_id: int):
+    """Yangi xizmat so'rovi haqida adminlarga xabar."""
+    from services.models import ServiceRequest
+    try:
+        req = ServiceRequest.objects.select_related('customer', 'category').get(id=request_id)
+        msg = (
+            f"🔔 <b>Yangi xizmat so'rovi #{req.id}</b>\n"
+            f"👤 Mijoz: {req.customer.username}\n"
+            f"📂 Kategoriya: {req.category.name if req.category else 'Noma\'lum'}\n"
+            f"📝 Tavsif: {req.description[:200]}\n"
+            f"💰 Byudjet: {req.budget or 'Kelishiladi'}"
+        )
+        send_telegram_notification.delay(msg)
+    except ServiceRequest.DoesNotExist:
+        logger.error(f"ServiceRequest #{request_id} topilmadi")
+
+
+@shared_task
+def notify_status_changed(request_id: int, old_status: str, new_status: str):
+    """Status o'zgarishi haqida xabar."""
+    from services.models import ServiceRequest
+    try:
+        req = ServiceRequest.objects.select_related('customer', 'provider').get(id=request_id)
+        status_emoji = {
+            'accepted':    '✅',
+            'in_progress': '🔧',
+            'completed':   '🎉',
+            'cancelled':   '❌',
+        }
+        emoji = status_emoji.get(new_status, '📋')
+        msg = (
+            f"{emoji} <b>So'rov #{req.id} holati o'zgardi</b>\n"
+            f"📊 {old_status} → {new_status}\n"
+            f"👤 Mijoz: {req.customer.username}\n"
+            f"🔧 Usta: {req.provider.username if req.provider else 'Yo\'q'}"
+        )
+        send_telegram_notification.delay(msg)
+    except ServiceRequest.DoesNotExist:
+        logger.error(f"ServiceRequest #{request_id} topilmadi")
