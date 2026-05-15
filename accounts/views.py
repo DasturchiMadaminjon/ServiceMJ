@@ -41,10 +41,13 @@ class SendOTPView(APIView):
         # Redisga 5 daqiqaga saqlash
         cache.set(f"otp_{user.id}", otp, timeout=300)
         
-        # SIMULATSIYA: Haqiqiy SMS o'rniga kodni logga chiqaramiz
+        # SIMULATSIYA: Haqiqiy SMS o'rniga kodni logga chiqaramiz va javobda yuboramiz
         print(f"\n[SMS SIMULATSIYA] Foydalanuvchi {user.username} uchun kod: {otp}\n")
         
-        return Response({"detail": "Tasdiqlash kodi yuborildi (Simulatsiya)."})
+        return Response({
+            "detail": "Tasdiqlash kodi yuborildi (Simulatsiya).",
+            "mock_code": otp  # Test rejimida kodni ochiq yuboramiz
+        })
 
 
 class VerifyOTPView(APIView):

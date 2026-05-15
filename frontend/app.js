@@ -432,14 +432,19 @@ async function loadProfile() {
 window.sendOTP = async function() {
   console.log("sendOTP function triggered");
   const r = await api('/accounts/send-otp/', { method: 'POST' });
+  const d = await r.json();
   if (r.ok) {
-    console.log("OTP sent successfully");
-    toast('Kod yuborildi!', 'success');
+    console.log("OTP sent successfully", d);
+    // Simulyatsiya uchun kodni ekranda ko'rsatish
+    if (d.mock_code) {
+      toast(`📲 SMS Keldi! Tasdiqlash kodi: ${d.mock_code}`, 'info');
+    } else {
+      toast('Tasdiqlash kodi yuborildi!', 'success');
+    }
     document.getElementById('otp-code').value = '';
     document.getElementById('otp-err').classList.add('hidden');
     document.getElementById('otp-modal').classList.remove('hidden');
   } else {
-    const d = await r.json();
     console.error("OTP send failed:", d);
     toast(d.detail || 'Xatolik yuz berdi', 'error');
   }
