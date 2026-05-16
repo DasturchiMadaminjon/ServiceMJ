@@ -50,6 +50,11 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
             qs = qs.filter(skills__category_id=category_id).distinct()
         return qs
 
+    def get_authenticators(self):
+        if self.action in ('list', 'retrieve', 'reviews'):
+            return []
+        return super().get_authenticators()
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'reviews'):
             return [permissions.AllowAny()]
@@ -77,6 +82,11 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
 
 class PortfolioItemViewSet(viewsets.ModelViewSet):
     serializer_class = PortfolioItemSerializer
+
+    def get_authenticators(self):
+        if self.action in ('list', 'retrieve'):
+            return []
+        return super().get_authenticators()
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
@@ -186,6 +196,11 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    def get_authenticators(self):
+        if self.action in ('list', 'retrieve'):
+            return []
+        return super().get_authenticators()
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
