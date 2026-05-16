@@ -158,11 +158,27 @@ async function loadCurrentUser() {
 }
 
 function logout() {
-  state.access = state.refresh = state.user = null;
-  state.providerProfileId = null; state.selectedSkillIds = [];
-  localStorage.clear();
+  localStorage.removeItem('access');
+  localStorage.removeItem('refresh');
+  
+  // State'ni to'liq tozalash
+  state.access = null;
+  state.refresh = null;
+  state.user = null;
+  state.providerProfileId = null;
+  state.selectedSkillIds = [];
+  state.myPortfolioItems = [];
+  
+  // DOM elementlarini tozalash
+  const avatarEl = document.getElementById('profile-avatar');
+  if (avatarEl) avatarEl.src = '';
+  const skillsEl = document.getElementById('pp-skills-list');
+  if (skillsEl) skillsEl.innerHTML = '';
+  
+  toast('Tizimdan chiqildi', 'info');
   document.getElementById('navbar').classList.add('hidden');
   showPage('auth');
+  location.reload(); // Sahifani to'liq yangilash (Xavfsizlik uchun)
 }
 
 // ─── INIT ──────────────────────────────────────────
