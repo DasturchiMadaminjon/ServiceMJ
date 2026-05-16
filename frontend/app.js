@@ -204,7 +204,7 @@ async function loadHome() {
   const cats = d.results || d;
   const icons = ['🔧','⚡','🪟','🏗️','🎨','🌿','🚿','🔌','🛠️','🏠'];
   document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
-    <div class="cat-card" onclick="loadProviders(1, '-rating', ${c.id})">
+    <div class="cat-card" onclick="showPage('providers'); loadProviders(1, '-rating', ${c.id})">
       <div class="cat-icon">${icons[i % icons.length]}</div>
       <div class="cat-name">${c.name}</div>
     </div>`).join('') || '<p style="color:var(--text-soft);text-align:center;padding:2rem">Kategoriyalar yuklanmoqda...</p>';
@@ -218,7 +218,6 @@ function searchProviders() {
 }
 
 async function loadProviders(page = 1, ordering = '-rating', categoryId = null) {
-  showPage('providers');
   state.providerPage = page; state.providerOrdering = ordering;
   
   const searchEl = document.getElementById('prov-search');
