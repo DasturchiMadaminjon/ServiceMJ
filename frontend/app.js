@@ -676,18 +676,18 @@ function renderSelectedSkills() {
   `).join('') || '<span style="color:var(--text-soft);font-size:0.85rem">Ko\'nikmalar tanlanmagan</span>';
 }
 
-function addSkillFromSelect(sel) {
+window.addSkillFromSelect = function(sel) {
   const id   = parseInt(sel.value);
   const name = sel.options[sel.selectedIndex].text;
   if (!id) return;
-  if (!state.selectedSkillIds.find(s => s.id === id))
-    state.selectedSkillIds.push({ id, name });
+  if (!state.selectedSkillIds.find(s => (s.id || s) === id))
+    state.selectedSkillIds.push(id);
   sel.value = '';
   renderSelectedSkills();
 }
 
-function removeSkill(id) {
-  state.selectedSkillIds = state.selectedSkillIds.filter(s => s.id !== id);
+window.removeSkill = function(id) {
+  state.selectedSkillIds = state.selectedSkillIds.filter(s => (s.id || s) !== id);
   renderSelectedSkills();
 }
 
@@ -696,7 +696,7 @@ async function saveProviderProfile() {
     bio:              document.getElementById('pp-bio').value.trim(),
     experience_years: parseInt(document.getElementById('pp-exp').value) || 0,
     hourly_rate:      document.getElementById('pp-rate').value || null,
-    skill_ids:        state.selectedSkillIds.map(s => s.id),
+    skill_ids:        state.selectedSkillIds.map(s => s.id || s),
   };
   const errEl = document.getElementById('pp-err');
   const okEl  = document.getElementById('pp-ok');
