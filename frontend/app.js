@@ -17,6 +17,7 @@ let state = {
   providerPage:      1,
   providerOrdering:  '-rating',
   providerCategoryId: null,
+  hireProviderId:     null,
   myPortfolioItems:  [],
   allSkills:         [], // MUHIM: Ko'nikmalar ro'yxati uchun
   allCategories:     [], // Kategoriyalar nomi uchun
@@ -552,6 +553,19 @@ async function loadCategories() {
   const sel = document.getElementById('cr-category');
   sel.innerHTML = '<option value="">— tanlang —</option>' +
     (d.results || d).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+  // Agar aniq ustaga buyurtma berilayotgan bo'lsa
+  const info = document.getElementById('cr-hire-info');
+  if (state.hireProviderId && info) {
+    const pr = await api(`/services/providers/${state.hireProviderId}/`);
+    if (pr.ok) {
+      const usta = await pr.json();
+      info.innerHTML = `Usta: <b>${usta.user?.username}</b> <span class="link" onclick="state.hireProviderId=null; loadCategories()">[Bekor]</span>`;
+      info.classList.remove('hidden');
+    }
+  } else if (info) {
+    info.classList.add('hidden');
+  }
 }
 
 async function createRequest() {
@@ -562,12 +576,14 @@ async function createRequest() {
     category:    document.getElementById('cr-category').value || null,
     address:     document.getElementById('cr-address').value.trim(),
     budget:      document.getElementById('cr-budget').value || null,
+    provider:    state.hireProviderId || null,
   };
   if (!body.description) { showErr(errEl, 'Tavsif kiritish shart'); return; }
   const r = await api('/services/requests/', { method: 'POST', body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) { showErr(errEl, Object.values(d).flat().join(' ')); return; }
   toast('Buyurtma yuborildi!', 'success');
+  state.hireProviderId = null; // Ishlatilgandan so'ng tozalash
   document.getElementById('cr-desc').value = '';
   document.getElementById('cr-address').value = '';
   document.getElementById('cr-budget').value = '';
