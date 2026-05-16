@@ -281,16 +281,31 @@ function initApp() {
 }
 
 // ─── HOME ──────────────────────────────────────────
+function getCatIcon(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('dastur')) return '💻';
+  if (n.includes('ustachilik')) return '🛠️';
+  if (n.includes('elektrik')) return '⚡';
+  if (n.includes('santex')) return '🚿';
+  if (n.includes('duradgor')) return '🪟';
+  if (n.includes('bog\'dor')) return '🌿';
+  if (n.includes('qurilish')) return '🏗️';
+  if (n.includes('tozalash')) return '🧹';
+  if (n.includes('dizayn')) return '🎨';
+  if (n.includes('yuk')) return '🚚';
+  return '🔧';
+}
+
 async function loadHome() {
   const r = await api('/services/categories/');
   if (!r.ok) return;
   const d = await r.json();
   const cats = d.results || d;
   state.allCategories = cats; // Keshlaymiz
-  const icons = ['🔧','⚡','🪟','🏗️','🎨','🌿','🚿','🔌','🛠️','🏠'];
+  
   document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
     <div class="cat-card" onclick="state.providerCategoryId = ${c.id}; showPage('providers')">
-      <div class="cat-icon">${icons[i % icons.length]}</div>
+      <div class="cat-icon">${getCatIcon(c.name)}</div>
       <div class="cat-name">${c.name}</div>
     </div>`).join('') || '<p style="color:var(--text-soft);text-align:center;padding:2rem">Kategoriyalar yuklanmoqda...</p>';
 }
