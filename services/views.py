@@ -37,6 +37,17 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
     ordering_fields = ['rating', 'experience_years']
     ordering = ['-rating']
 
+    def get_queryset(self):
+        # Swagger uchun guard
+        if getattr(self, 'swagger_fake_view', False):
+            return ProviderProfile.objects.none()
+            
+        qs = ProviderProfile.objects.filter(is_active=True).select_related('user').prefetch_related('skills')
+        category_id = self.request.query_params.get('skills__category')
+        if category_id:
+            qs = qs.filter(skills__category_id=category_id).distinct()
+        return qs
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'reviews'):
             return [permissions.AllowAny()]
