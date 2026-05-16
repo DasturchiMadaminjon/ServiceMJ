@@ -44,7 +44,11 @@ async function api(path, opts = {}, retryCount = 0) {
   if (!(opts.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  if (state.access) headers['Authorization'] = 'Bearer ' + state.access;
+  
+  // Faqat skipAuth bo'lmasa va token bo'lsa header qo'shamiz
+  if (state.access && !opts.skipAuth) {
+    headers['Authorization'] = 'Bearer ' + state.access;
+  }
 
   try {
     const r = await fetch(`${API}${path}`, { ...opts, headers });
@@ -72,12 +76,7 @@ async function api(path, opts = {}, retryCount = 0) {
       const isPublic = path.includes('/categories/') || path.includes('/providers/');
       if (isPublic && state.access) {
         console.warn("Public endpoint 401 with token, retrying without token...");
-        const newOpts = { ...opts };
-        delete newOpts.headers?.Authorization;
-        // state.access ni vaqtincha olib tashlamaymiz, faqat shu so'rov uchun
-        const headersNoAuth = { ...headers };
-        delete headersNoAuth['Authorization'];
-        return api(path, { ...opts, headers: headersNoAuth }, 1);
+        return api(path, { ...opts, skipAuth: true }, 1);
       }
 
       // Token yangilash (Singleton)
