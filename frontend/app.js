@@ -353,8 +353,11 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
   if (!r.ok) return;
   const d = await r.json();
   const list = document.getElementById('providers-list');
-  list.innerHTML = (d.results || []).map(provCard).join('') ||
-    '<div class="empty"><div class="empty-icon">😔</div>Bu turdagi usta topilmadi</div>';
+  const emptyMsg = state.providerCategoryId 
+    ? `<div class="empty"><div class="empty-icon">😔</div>Bu kategoriyada hozircha ustalar yo'q.<br><span class="link" onclick="state.providerCategoryId=null; loadProviders(1)">Barcha ustalarni ko'rish</span></div>`
+    : `<div class="empty"><div class="empty-icon">😔</div>Usta topilmadi</div>`;
+    
+  list.innerHTML = (d.results || []).map(provCard).join('') || emptyMsg;
   renderPagination('providers-pagination', d, p => loadProviders(p, ordering, categoryId));
 }
 
