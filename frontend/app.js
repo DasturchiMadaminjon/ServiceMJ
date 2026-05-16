@@ -45,14 +45,36 @@ async function api(path, opts = {}, retry = true) {
   }
   if (state.access) headers['Authorization'] = 'Bearer ' + state.access;
 
-  let r = await fetch(`${API}${path}`, { ...opts, headers });
+  try {
+    const r = await fetch(`${API}${path}`, { ...opts, headers });
 
-  if (r.status === 401 && retry) {
-    const ok = await refreshToken();
-    if (ok) return api(path, opts, false);
-    logout(); return r;
+    // Safe JSON method
+    r.originalJson = r.json;
+    r.json = async function() {
+      try {
+        return await this.originalJson();
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        return { detail: "Server xatosi (JSON kutilgan edi)" };
+      }
+    };
+
+    if (r.status === 429) {
+      console.warn("Too many requests, waiting 2s...");
+      await new Promise(res => setTimeout(res, 2000));
+      return api(path, opts, retry);
+    }
+
+    if (r.status === 401 && retry) {
+      const ok = await refreshToken();
+      if (ok) return api(path, opts, false);
+      logout(); return r;
+    }
+    return r;
+  } catch (e) {
+    console.error("API Fetch Error:", e);
+    return { ok: false, status: 500, json: async () => ({ detail: "Tarmoq xatosi" }) };
   }
-  return r;
 }
 
 // ─── TOAST ─────────────────────────────────────────
@@ -91,14 +113,21 @@ const PAGE_LOADERS = {
   'request':            initRequestPage,
 };
 
+let isNavigating = false;
 function showPage(name) {
-  document.querySelectorAll('.page,.page-center').forEach(p => p.classList.add('hidden'));
-  const el = document.getElementById(`page-${name}`);
-  if (el) el.classList.remove('hidden');
-  if (PAGE_LOADERS[name]) PAGE_LOADERS[name]();
-  window.scrollTo(0, 0);
-  // nav burger yopish
-  document.getElementById('nav-links').classList.remove('open');
+  if (isNavigating) return;
+  isNavigating = true;
+  try {
+    document.querySelectorAll('.page,.page-center').forEach(p => p.classList.add('hidden'));
+    const el = document.getElementById(`page-${name}`);
+    if (el) el.classList.remove('hidden');
+    if (PAGE_LOADERS[name]) PAGE_LOADERS[name]();
+    window.scrollTo(0, 0);
+    // nav burger yopish
+    document.getElementById('nav-links').classList.remove('open');
+  } finally {
+    setTimeout(() => { isNavigating = false; }, 300);
+  }
 }
 
 // ─── AUTH ──────────────────────────────────────────
