@@ -660,22 +660,20 @@ async function loadProviderProfile() {
     renderSelectedSkills();
   }
 }
-  if (my) {
-    state.providerProfileId = my.id;
-    state.selectedSkillIds = (my.skills || []).map(s => ({ id: s.id, name: s.name }));
-    document.getElementById('pp-bio').value  = my.bio || '';
-    document.getElementById('pp-exp').value  = my.experience_years || 0;
-    document.getElementById('pp-rate').value = my.hourly_rate || '';
-    renderSelectedSkills();
-  }
-}
 
 function renderSelectedSkills() {
-  document.getElementById('pp-skills-selected').innerHTML =
-    state.selectedSkillIds.map(s => `
-      <span class="skill-tag">${s.name}
-        <span class="remove-skill" onclick="removeSkill(${s.id})">×</span>
-      </span>`).join('');
+  const list = document.getElementById('pp-skills-list');
+  if (!list) return;
+  const selectedSkills = state.allSkills.filter(s => 
+    state.selectedSkillIds.some(sid => (sid.id || sid) === s.id)
+  );
+  
+  list.innerHTML = selectedSkills.map(s => `
+    <div class="skill-chip">
+      ${s.name}
+      <span class="skill-chip-remove" onclick="toggleSkill(${s.id})">&times;</span>
+    </div>
+  `).join('') || '<span style="color:var(--text-soft);font-size:0.85rem">Ko\'nikmalar tanlanmagan</span>';
 }
 
 function addSkillFromSelect(sel) {
