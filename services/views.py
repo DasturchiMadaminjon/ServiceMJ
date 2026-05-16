@@ -17,6 +17,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.filter(parent=None).prefetch_related('children', 'skills').order_by('id')
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
@@ -25,6 +26,7 @@ class SkillViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Skill.objects.select_related('category').all().order_by('id')
     serializer_class = SkillSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
