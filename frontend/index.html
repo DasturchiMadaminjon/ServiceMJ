@@ -226,17 +226,33 @@
       <div class="field"><label>Tajriba (yil)</label><input id="pp-exp" type="number" min="0" max="50"></div>
       <div class="field"><label>Soatlik narx (so'm)</label><input id="pp-rate" type="number" min="0"></div>
       <div class="field">
-        <label>Ko'nikmalar</label>
-        <div id="pp-skills-selected" class="skill-tags" style="margin-bottom:.5rem"></div>
-        <select id="pp-skills-select" onchange="addSkillFromSelect(this)">
-          <option value="">— ko'nikma qo'shish —</option>
-        </select>
+      <label>Ko'nikmalar</label>
+      <div id="pp-skills-list" class="skills-chips">
+        <!-- Tanlangan ko'nikmalar shu yerda chiqadi -->
       </div>
-      <div id="pp-err" class="err hidden"></div>
-      <div id="pp-ok" class="ok hidden"></div>
-      <button class="btn btn-primary" onclick="saveProviderProfile()">Profilni saqlash</button>
+      <button class="btn btn-sm btn-outline" onclick="openSkillsModal()" style="margin-top:0.5rem">+ Ko'nikma qo'shish</button>
+    </div>
+    <div id="pp-err" class="err hidden"></div>
+    <div id="pp-ok" class="ok hidden"></div>
+    <button class="btn btn-primary btn-full" onclick="saveProviderProfile()">Profilni saqlash</button>
+  </div>
+</div>
+
+<!-- ═══════════════ SKILLS MODAL ═══════════════ -->
+<div id="skills-modal" class="modal hidden">
+  <div class="modal-box" style="max-width: 600px;">
+    <h3>Ko'nikmalarni tanlang</h3>
+    <div class="field" style="margin-top: 1rem;">
+      <input id="skills-search" type="text" placeholder="Qidirish... (masalan: Python, Santexnika)" oninput="filterSkills()">
+    </div>
+    <div id="skills-container" class="skills-grid-modal">
+      <!-- Ko'nikmalar kategoriyalar bo'yicha shu yerda chiqadi -->
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('skills-modal')">Tayyor</button>
     </div>
   </div>
+</div>
 </div>
 
 <!-- ═══════════════ MY PORTFOLIO (provider) ═══════════════ -->

@@ -565,19 +565,8 @@ async function uploadAvatar(input) {
   toast('Avatar yangilandi!', 'success');
 }
 
-// ─── PROVIDER PROFILE ──────────────────────────────
+// ─── PROVIDER PROFILE ─────────────────────────────
 async function loadProviderProfile() {
-  const [pr, sk] = await Promise.all([
-    api('/services/providers/'),
-    api('/services/skills/'),
-  ]);
-  // Skills select
-  if (sk.ok) {
-    const sd = await sk.json();
-    const skillSel = document.getElementById('pp-skills-select');
-    skillSel.innerHTML = '<option value="">— ko\'nikma qo\'shish —</option>' +
-      (sd.results || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  }
   if (!pr.ok) return;
   const d = await pr.json();
   const my = (d.results || []).find(p => p.user?.id === state.user?.id);

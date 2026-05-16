@@ -273,6 +273,66 @@ textarea { resize: vertical; }
 .review-stars { color: var(--warn); font-size: .85rem; }
 .review-text { font-size: .82rem; color: var(--text-soft); }
 
+/* SKILLS UI */
+.skills-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.skill-chip {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.skill-chip-remove {
+  cursor: pointer;
+  font-weight: bold;
+  opacity: 0.6;
+}
+.skill-chip-remove:hover { opacity: 1; }
+
+.skills-grid-modal {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+.skills-group { margin-bottom: 1.5rem; }
+.skills-group h4 {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.skills-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+.skill-item {
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.skill-item:hover { background: #f3f4f6; }
+.skill-item.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
 /* ── MODAL ── */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45);
          display: flex; align-items: center; justify-content: center;
