@@ -19,6 +19,7 @@ let state = {
   providerCategoryId: null,
   myPortfolioItems:  [],
   allSkills:         [], // MUHIM: Ko'nikmalar ro'yxati uchun
+  allCategories:     [], // Kategoriyalar nomi uchun
 };
 
 // ─── TOKEN YANGILASH ───────────────────────────────
@@ -285,6 +286,7 @@ async function loadHome() {
   if (!r.ok) return;
   const d = await r.json();
   const cats = d.results || d;
+  state.allCategories = cats; // Keshlaymiz
   const icons = ['🔧','⚡','🪟','🏗️','🎨','🌿','🚿','🔌','🛠️','🏠'];
   document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
     <div class="cat-card" onclick="state.providerCategoryId = ${c.id}; showPage('providers')">
@@ -301,10 +303,23 @@ function searchProviders() {
 }
 
 async function loadProviders(page = 1, ordering = '-rating', categoryId = null) {
+  if (categoryId !== null) state.providerCategoryId = categoryId;
+  page = page || 1;
   state.providerPage = page; state.providerOrdering = ordering;
   
   const searchEl = document.getElementById('prov-search');
-  if (categoryId && searchEl) searchEl.value = ''; // Kategoriya tanlanganda qidiruvni tozalash
+  const catStatusEl = document.getElementById('prov-cat-status');
+  
+  if (state.providerCategoryId) {
+    const cat = state.allCategories?.find(c => c.id == state.providerCategoryId);
+    if (catStatusEl) {
+      catStatusEl.innerHTML = `Kategoriya: <b>${cat ? cat.name : '...'}</b> <span class="link" onclick="state.providerCategoryId=null; loadProviders(1)">[Tozalash]</span>`;
+      catStatusEl.classList.remove('hidden');
+    }
+    if (searchEl) searchEl.value = ''; 
+  } else {
+    if (catStatusEl) catStatusEl.classList.add('hidden');
+  }
 
   document.querySelectorAll('.sort-row .chip').forEach(c => {
     c.classList.toggle('active', c.getAttribute('onclick')?.includes(ordering));
@@ -312,8 +327,12 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
 
   const q = searchEl?.value.trim() || '';
   let url = `/services/providers/?page=${page}&ordering=${ordering}`;
-  if (q) url += `&search=${encodeURIComponent(q)}`;
-  if (categoryId) url += `&skills__category=${categoryId}`; // Backend'dagi filtrga bog'liqlik
+  if (q) {
+    url += `&search=${encodeURIComponent(q)}`;
+    state.providerCategoryId = null; // Qidiruv qilganda kategoriyani tozalash
+    if (catStatusEl) catStatusEl.classList.add('hidden');
+  }
+  if (state.providerCategoryId) url += `&skills__category=${state.providerCategoryId}`;
 
   const r = await api(url);
   if (!r.ok) return;
@@ -349,8 +368,6 @@ function provCard(p) {
 }
 
 async function showProviderDetail(id) {
-  if (isNavigating) return;
-  isNavigating = true;
   try {
     await showPage('provider-detail');
     const [pr, rv] = await Promise.all([

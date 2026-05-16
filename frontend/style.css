@@ -383,3 +383,26 @@ hr { border: none; border-top: 1px solid var(--border); }
 /* ── EMPTY STATE ── */
 .empty { text-align: center; padding: 3rem 1rem; color: var(--text-soft); }
 .empty-icon { font-size: 2.5rem; margin-bottom: .6rem; }
+
+/* ── CAT STATUS ── */
+.cat-status-bar {
+  background: #f8fafc;
+  padding: 0.7rem 1.2rem;
+  border-radius: 12px;
+  margin-bottom: 1.2rem;
+  font-size: 0.92rem;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-main);
+}
+.cat-status-bar .link {
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+  padding-left: 0.5rem;
+}
+.cat-status-bar .link:hover {
+  text-decoration: underline;
+}
