@@ -38,20 +38,32 @@ async function refreshToken() {
 }
 
 // ─── API SO'ROV ─────────────────────────────────────
+let isRefreshing = null;
+const activeRequests = new Map();
+
 async function api(path, opts = {}, retryCount = 0) {
   const MAX_RETRIES = 3;
-  const headers = { ...(opts.headers || {}) };
-  if (!(opts.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
-  
-  // Faqat skipAuth bo'lmasa va token bo'lsa header qo'shamiz
-  if (state.access && !opts.skipAuth) {
-    headers['Authorization'] = 'Bearer ' + state.access;
+  const fullUrl = `${API}${path}`;
+
+  // Bir xil so'rov ketayotgan bo'lsa, yangisini yubormaymiz (faqat GET so'rovlar uchun)
+  if (!opts.method || opts.method === 'GET') {
+    if (activeRequests.has(fullUrl) && retryCount === 0) {
+      return activeRequests.get(fullUrl);
+    }
   }
 
-  try {
-    const r = await fetch(`${API}${path}`, { ...opts, headers });
+  const promise = (async () => {
+    const headers = { ...(opts.headers || {}) };
+    if (!(opts.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    if (state.access && !opts.skipAuth) {
+      headers['Authorization'] = 'Bearer ' + state.access;
+    }
+
+    try {
+      const r = await fetch(fullUrl, { ...opts, headers });
 
     // Safe JSON method
     r.originalJson = r.json;
@@ -89,11 +101,19 @@ async function api(path, opts = {}, retryCount = 0) {
       if (ok) return api(path, opts, 1);
       logout(); return r;
     }
-    return r;
-  } catch (e) {
-    console.error("API Fetch Error:", e);
-    return { ok: false, status: 500, json: async () => ({ detail: "Tarmoq xatosi" }) };
+      return r;
+    } catch (e) {
+      console.error("API Fetch Error:", e);
+      return { ok: false, status: 500, json: async () => ({ detail: "Tarmoq xatosi" }) };
+    }
+  })();
+
+  if (!opts.method || opts.method === 'GET') {
+    activeRequests.set(fullUrl, promise);
+    promise.finally(() => activeRequests.delete(fullUrl));
   }
+
+  return promise;
 }
 
 // ─── TOAST ─────────────────────────────────────────
