@@ -222,6 +222,14 @@ function initApp() {
   document.getElementById('nav-provider2').classList.toggle('hidden', role !== 'provider');
   document.getElementById('nav-admin').classList.toggle('hidden',   !state.user.is_staff && role !== 'admin');
   document.getElementById('home-client-btn')?.classList.toggle('hidden', role !== 'client');
+  
+  // Navbarda foydalanuvchi ismini ko'rsatish
+  const userInfo = document.getElementById('nav-user-info');
+  if (userInfo) {
+    const roleName = role === 'provider' ? 'Usta' : (role === 'client' ? 'Mijoz' : 'Admin');
+    userInfo.textContent = `${state.user.username} (${roleName})`;
+  }
+
   showPage('home');
 }
 
