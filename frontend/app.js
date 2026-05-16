@@ -679,7 +679,7 @@ async function loadProviderProfile() {
     document.getElementById('pp-rate').value = d.hourly_rate || '';
     state.selectedSkillIds = d.skills || [];
     
-    if (!state.allSkills.length) {
+    if (!(state.allSkills || []).length) {
       const rs = await api('/services/skills/');
       if (rs.ok) {
         const ds = await rs.json();
