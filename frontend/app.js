@@ -68,8 +68,26 @@ async function api(path, opts = {}, retryCount = 0) {
     }
 
     if (r.status === 401 && retryCount === 0) {
-      const ok = await refreshToken();
-      if (ok) return api(path, opts, 1); // retryCountni 1 qilib qo'yamiz loop bo'lmasligi uchun
+      // Agar ochiq endpoint bo'lsa (categories, providers), tokensiz urinib ko'ramiz
+      const isPublic = path.includes('/categories/') || path.includes('/providers/');
+      if (isPublic && state.access) {
+        console.warn("Public endpoint 401 with token, retrying without token...");
+        const newOpts = { ...opts };
+        delete newOpts.headers?.Authorization;
+        // state.access ni vaqtincha olib tashlamaymiz, faqat shu so'rov uchun
+        const headersNoAuth = { ...headers };
+        delete headersNoAuth['Authorization'];
+        return api(path, { ...opts, headers: headersNoAuth }, 1);
+      }
+
+      // Token yangilash (Singleton)
+      if (!isRefreshing) {
+        isRefreshing = refreshToken();
+      }
+      const ok = await isRefreshing;
+      isRefreshing = null;
+
+      if (ok) return api(path, opts, 1);
       logout(); return r;
     }
     return r;
