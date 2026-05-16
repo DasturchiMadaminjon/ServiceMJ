@@ -558,10 +558,50 @@ async function uploadAvatar(input) {
     toast(Object.values(d).flat().join(' '), 'error');
     return;
   }
-  const u = await r.json();
-  document.getElementById('profile-avatar').src = u.avatar_url || '';
-  statusTxt.textContent = '✅ Rasm yuklandi!';
-  setTimeout(() => progressWrap.classList.add('hidden'), 2000);
+  window.renderAllSkills = function() {
+  const container = document.getElementById('skills-container');
+  const q = document.getElementById('skills-search').value.toLowerCase();
+  
+  const groups = {};
+  state.allSkills.forEach(s => {
+    const catName = s.category_name || 'Boshqalar';
+    if (!groups[catName]) groups[catName] = [];
+    if (!q || s.name.toLowerCase().includes(q)) {
+      groups[catName].push(s);
+    }
+  });
+
+  container.innerHTML = Object.entries(groups).map(([name, skills]) => {
+    if (skills.length === 0) return '';
+    return `
+      <div class="skills-group">
+        <h4>${name}</h4>
+        <div class="skills-group-grid">
+          ${skills.map(s => {
+            const active = state.selectedSkillIds.some(sid => (sid.id || sid) === s.id);
+            return `<div class="skill-item ${active ? 'active' : ''}" onclick="toggleSkill(${s.id})">${s.name}</div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('') || '<div class="empty">Ko\'nikma topilmadi</div>';
+}
+
+window.toggleSkill = function(id) {
+  const idx = state.selectedSkillIds.findIndex(sid => (sid.id || sid) === id);
+  if (idx === -1) {
+    state.selectedSkillIds.push(id);
+  } else {
+    state.selectedSkillIds.splice(idx, 1);
+  }
+  window.renderAllSkills();
+  renderSelectedSkills();
+}
+
+window.filterSkills = function() {
+  window.renderAllSkills();
+}
+setTimeout(() => progressWrap.classList.add('hidden'), 2000);
   toast('Avatar yangilandi!', 'success');
 }
 
@@ -632,6 +672,19 @@ function openLightbox(url) {
 }
 
 // ─── MY PORTFOLIO (provider) ───────────────────────
+window.openSkillsModal = async function() {
+  console.log("openSkillsModal triggered");
+  if (!state.allSkills.length) {
+    const r = await api('/services/skills/');
+    if (r.ok) {
+      const d = await r.json();
+      state.allSkills = d.results || d;
+    }
+  }
+  renderAllSkills();
+  document.getElementById('skills-modal').classList.remove('hidden');
+}
+
 async function loadMyPortfolio() {
   if (!state.providerProfileId) {
     const r = await api('/services/providers/');
