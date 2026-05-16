@@ -65,6 +65,19 @@ function toast(msg, type = 'info') {
 }
 
 // ─── SAHIFALAR ─────────────────────────────────────
+async function initRequestPage() {
+  const r = await api('/services/categories/');
+  if (r.ok) {
+    const d = await r.json();
+    const cats = d.results || d;
+    const select = document.getElementById('req-category');
+    if (select) {
+      select.innerHTML = '<option value="">— tanlang —</option>' +
+        cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+  }
+}
+
 const PAGE_LOADERS = {
   'home':               loadHome,
   'providers':          () => loadProviders(1, state.providerOrdering),
@@ -74,6 +87,7 @@ const PAGE_LOADERS = {
   'my-portfolio':       loadMyPortfolio,
   'admin-stats':        loadAdminStats,
   'create-request':     loadCategories,
+  'request':            initRequestPage,
 };
 
 function showPage(name) {
