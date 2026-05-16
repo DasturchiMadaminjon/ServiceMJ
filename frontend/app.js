@@ -303,7 +303,7 @@ async function showProviderDetail(id) {
   document.getElementById('provider-detail-content').innerHTML = `
     <div class="detail-hero">
       <img class="detail-avatar" src="${avatar}" alt="">
-      <div>
+      <div style="flex:1">
         <div class="detail-name">${p.user?.username || '—'}</div>
         <div class="detail-meta">
           ⭐ ${Number(p.rating||0).toFixed(1)} · 📅 ${p.experience_years} yil · 
@@ -311,6 +311,7 @@ async function showProviderDetail(id) {
         </div>
         ${p.bio ? `<p style="margin-top:.5rem;font-size:.9rem">${p.bio}</p>` : ''}
       </div>
+      <button class="btn btn-primary" onclick="hireProvider(${p.id})">Buyurtma berish</button>
     </div>
     <div class="section-title">Ko'nikmalar</div>
     <div class="skill-tags">${skills}</div>
@@ -318,6 +319,11 @@ async function showProviderDetail(id) {
     <div class="portfolio-grid">${portfolio}</div>
     <div class="section-title">Sharhlar (${reviews.length})</div>
     <div>${revHTML}</div>`;
+}
+
+function hireProvider(providerId) {
+  state.hireProviderId = providerId;
+  showPage('create-request');
 }
 
 // ─── MY REQUESTS (client) ──────────────────────────
