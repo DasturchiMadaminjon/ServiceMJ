@@ -588,13 +588,14 @@ async function uploadAvatar(input) {
   fd.append('avatar', file);
   const r = await api('/accounts/profile/', { method: 'PATCH', body: fd });
   bar.style.width = '100%';
-  if (!r.ok) {
-    const d = await r.json();
-    statusTxt.textContent = 'Xato!';
-    toast(Object.values(d).flat().join(' '), 'error');
-    return;
-  }
-  window.renderAllSkills = function() {
+  const u = await r.json();
+  document.getElementById('profile-avatar').src = u.avatar_url || '';
+  statusTxt.textContent = '✅ Rasm yuklandi!';
+  setTimeout(() => progressWrap.classList.add('hidden'), 2000);
+  toast('Avatar yangilandi!', 'success');
+}
+
+window.renderAllSkills = function() {
   const container = document.getElementById('skills-container');
   const q = document.getElementById('skills-search').value.toLowerCase();
   
@@ -637,15 +638,28 @@ window.toggleSkill = function(id) {
 window.filterSkills = function() {
   window.renderAllSkills();
 }
-setTimeout(() => progressWrap.classList.add('hidden'), 2000);
-  toast('Avatar yangilandi!', 'success');
-}
 
 // ─── PROVIDER PROFILE ─────────────────────────────
 async function loadProviderProfile() {
-  if (!pr.ok) return;
-  const d = await pr.json();
-  const my = (d.results || []).find(p => p.user?.id === state.user?.id);
+  const r = await api('/services/providers/me/');
+  if (r.ok) {
+    const d = await r.json();
+    state.providerProfileId = d.id;
+    document.getElementById('pp-bio').value = d.bio || '';
+    document.getElementById('pp-exp').value = d.experience_years || 0;
+    document.getElementById('pp-rate').value = d.hourly_rate || '';
+    state.selectedSkillIds = d.skills || [];
+    
+    if (!state.allSkills.length) {
+      const rs = await api('/services/skills/');
+      if (rs.ok) {
+        const ds = await rs.json();
+        state.allSkills = ds.results || ds;
+      }
+    }
+    renderSelectedSkills();
+  }
+}
   if (my) {
     state.providerProfileId = my.id;
     state.selectedSkillIds = (my.skills || []).map(s => ({ id: s.id, name: s.name }));
