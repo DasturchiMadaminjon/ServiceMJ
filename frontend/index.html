@@ -41,7 +41,7 @@
   <div class="nav-inner">
     <a class="logo" href="#" onclick="showPage('home')">⚡ ServiceHub</a>
     <div class="nav-links" id="nav-links">
-      <a href="#" onclick="showPage('providers')">Ustalar</a>
+      <a href="#" onclick="state.providerCategoryId = null; state.providerPage = 1; showPage('providers')">Ustalar</a>
       <span id="nav-client" class="hidden"><a href="#" onclick="showPage('my-requests')">So'rovlarim</a></span>
       <span id="nav-client2" class="hidden"><a href="#" onclick="showPage('create-request')">+ Buyurtma</a></span>
       <span id="nav-provider" class="hidden"><a href="#" onclick="showPage('available-requests')">Buyurtmalar</a></span>

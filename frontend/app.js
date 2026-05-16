@@ -16,6 +16,7 @@ let state = {
   currentStatus:     '',
   providerPage:      1,
   providerOrdering:  '-rating',
+  providerCategoryId: null,
   myPortfolioItems:  [],
   allSkills:         [], // MUHIM: Ko'nikmalar ro'yxati uchun
 };
@@ -142,7 +143,7 @@ async function initRequestPage() {
 
 const PAGE_LOADERS = {
   'home':               loadHome,
-  'providers':          () => loadProviders(1, state.providerOrdering),
+  'providers':          () => loadProviders(state.providerPage, state.providerOrdering, state.providerCategoryId),
   'my-requests':        loadMyRequests,
   'available-requests': () => loadAvailableRequests('pending'),
   'profile':            loadProfile,
@@ -286,7 +287,7 @@ async function loadHome() {
   const cats = d.results || d;
   const icons = ['🔧','⚡','🪟','🏗️','🎨','🌿','🚿','🔌','🛠️','🏠'];
   document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
-    <div class="cat-card" onclick="showPage('providers'); loadProviders(1, '-rating', ${c.id})">
+    <div class="cat-card" onclick="state.providerCategoryId = ${c.id}; showPage('providers')">
       <div class="cat-icon">${icons[i % icons.length]}</div>
       <div class="cat-name">${c.name}</div>
     </div>`).join('') || '<p style="color:var(--text-soft);text-align:center;padding:2rem">Kategoriyalar yuklanmoqda...</p>';
