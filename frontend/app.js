@@ -17,6 +17,7 @@ let state = {
   providerPage:      1,
   providerOrdering:  '-rating',
   myPortfolioItems:  [],
+  allSkills:         [], // MUHIM: Ko'nikmalar ro'yxati uchun
 };
 
 // ─── TOKEN YANGILASH ───────────────────────────────
