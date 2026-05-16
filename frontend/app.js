@@ -38,7 +38,8 @@ async function refreshToken() {
 }
 
 // ─── API SO'ROV ─────────────────────────────────────
-async function api(path, opts = {}, retry = true) {
+async function api(path, opts = {}, retryCount = 0) {
+  const MAX_RETRIES = 3;
   const headers = { ...(opts.headers || {}) };
   if (!(opts.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
@@ -59,15 +60,16 @@ async function api(path, opts = {}, retry = true) {
       }
     };
 
-    if (r.status === 429) {
-      console.warn("Too many requests, waiting 2s...");
-      await new Promise(res => setTimeout(res, 2000));
-      return api(path, opts, retry);
+    if (r.status === 429 && retryCount < MAX_RETRIES) {
+      const waitTime = Math.pow(2, retryCount + 1) * 1000;
+      console.warn(`Too many requests. Retrying in ${waitTime/1000}s... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      await new Promise(res => setTimeout(res, waitTime));
+      return api(path, opts, retryCount + 1);
     }
 
-    if (r.status === 401 && retry) {
+    if (r.status === 401 && retryCount === 0) {
       const ok = await refreshToken();
-      if (ok) return api(path, opts, false);
+      if (ok) return api(path, opts, 1); // retryCountni 1 qilib qo'yamiz loop bo'lmasligi uchun
       logout(); return r;
     }
     return r;
@@ -114,19 +116,25 @@ const PAGE_LOADERS = {
 };
 
 let isNavigating = false;
-function showPage(name) {
+async function showPage(name) {
   if (isNavigating) return;
   isNavigating = true;
   try {
     document.querySelectorAll('.page,.page-center').forEach(p => p.classList.add('hidden'));
     const el = document.getElementById(`page-${name}`);
     if (el) el.classList.remove('hidden');
-    if (PAGE_LOADERS[name]) PAGE_LOADERS[name]();
+    
+    if (PAGE_LOADERS[name]) {
+      await PAGE_LOADERS[name]();
+    }
+    
     window.scrollTo(0, 0);
     // nav burger yopish
     document.getElementById('nav-links').classList.remove('open');
+  } catch (e) {
+    console.error(`Page load error (${name}):`, e);
   } finally {
-    setTimeout(() => { isNavigating = false; }, 300);
+    isNavigating = false;
   }
 }
 
@@ -303,59 +311,67 @@ function provCard(p) {
 }
 
 async function showProviderDetail(id) {
-  showPage('provider-detail');
-  const [pr, rv] = await Promise.all([
-    api(`/services/providers/${id}/`),
-    api(`/services/providers/${id}/reviews/`),
-  ]);
-  if (!pr.ok) return;
-  const p = await pr.json();
-  const reviews = rv.ok ? ((await rv.json()).results || []) : [];
-  const avatar = p.user?.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.username||'U')}&background=6366f1&color=fff&size=90`;
+  if (isNavigating) return;
+  isNavigating = true;
+  try {
+    await showPage('provider-detail');
+    const [pr, rv] = await Promise.all([
+      api(`/services/providers/${id}/`),
+      api(`/services/providers/${id}/reviews/`),
+    ]);
+    if (!pr.ok) return;
+    const p = await pr.json();
+    const reviews = rv.ok ? ((await rv.json()).results || []) : [];
+    const avatar = p.user?.avatar_url ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.username||'U')}&background=6366f1&color=fff&size=90`;
 
-  const skills = (p.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('') ||
-    '<span style="color:var(--text-soft)">Ko\'nikmalar ko\'rsatilmagan</span>';
+    const skills = (p.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('') ||
+      '<span style="color:var(--text-soft)">Ko\'nikmalar ko\'rsatilmagan</span>';
 
-  const portfolio = (p.portfolio_items || []).map(item => `
-    <div class="portfolio-item">
-      ${item.image_url
-        ? `<img class="portfolio-img" src="${item.image_url}" alt="${item.title}">`
-        : `<div class="portfolio-img-placeholder">🖼️</div>`}
-      <div class="portfolio-item-body">
-        <div class="portfolio-item-title">${item.title}</div>
-        ${item.description ? `<div class="portfolio-item-desc">${item.description}</div>` : ''}
-      </div>
-    </div>`).join('') || '<p style="color:var(--text-soft)">Portfolio yo\'q</p>';
-
-  const revHTML = reviews.map(rv => `
-    <div class="review-card">
-      <div class="review-header">
-        <span class="review-author">@${rv.reviewer_name}</span>
-        <span class="review-stars">${'⭐'.repeat(rv.rating)}</span>
-      </div>
-      ${rv.comment ? `<div class="review-text">${rv.comment}</div>` : ''}
-    </div>`).join('') || '<p style="color:var(--text-soft)">Hali sharh yo\'q</p>';
-
-  document.getElementById('provider-detail-content').innerHTML = `
-    <div class="detail-hero">
-      <img class="detail-avatar" src="${avatar}" alt="">
-      <div style="flex:1">
-        <div class="detail-name">${p.user?.username || '—'}</div>
-        <div class="detail-meta">
-          ⭐ ${Number(p.rating||0).toFixed(1)} · 📅 ${p.experience_years} yil · 
-          ${p.hourly_rate ? `💰 ${Number(p.hourly_rate).toLocaleString()} so'm/soat` : ''}
+    const portfolio = (p.portfolio_items || []).map(item => `
+      <div class="portfolio-item">
+        ${item.image_url
+          ? `<img class="portfolio-img" src="${item.image_url}" alt="${item.title}">`
+          : `<div class="portfolio-img-placeholder">🖼️</div>`}
+        <div class="portfolio-item-body">
+          <div class="portfolio-item-title">${item.title}</div>
+          ${item.description ? `<div class="portfolio-item-desc">${item.description}</div>` : ''}
         </div>
-        ${p.bio ? `<p style="margin-top:.5rem;font-size:.9rem">${p.bio}</p>` : ''}
+      </div>`).join('') || '<p style="color:var(--text-soft)">Portfolio yo\'q</p>';
+
+    const revHTML = reviews.map(rv => `
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-author">@${rv.reviewer_name}</span>
+          <span class="review-stars">${'⭐'.repeat(rv.rating)}</span>
+        </div>
+        ${rv.comment ? `<div class="review-text">${rv.comment}</div>` : ''}
+      </div>`).join('') || '<p style="color:var(--text-soft)">Hali sharh yo\'q</p>';
+
+    document.getElementById('provider-detail-content').innerHTML = `
+      <div class="detail-hero">
+        <img class="detail-avatar" src="${avatar}" alt="">
+        <div style="flex:1">
+          <div class="detail-name">${p.user?.username || '—'}</div>
+          <div class="detail-meta">
+            ⭐ ${Number(p.rating||0).toFixed(1)} · 📅 ${p.experience_years} yil · 
+            ${p.hourly_rate ? `💰 ${Number(p.hourly_rate).toLocaleString()} so'm/soat` : ''}
+          </div>
+          ${p.bio ? `<p style="margin-top:.5rem;font-size:.9rem">${p.bio}</p>` : ''}
+        </div>
+        <button class="btn btn-primary" onclick="hireProvider(${p.id})">Buyurtma berish</button>
       </div>
-      <button class="btn btn-primary" onclick="hireProvider(${p.id})">Buyurtma berish</button>
-    </div>
-    <div class="section-title">Ko'nikmalar</div>
-    <div class="skill-tags">${skills}</div>
-    <div class="section-title">Portfolio (${(p.portfolio_items||[]).length})</div>
-    <div class="portfolio-grid">${portfolio}</div>
-    <div class="section-title">Sharhlar (${reviews.length})</div>
-    <div>${revHTML}</div>`;
+      <div class="section-title">Ko'nikmalar</div>
+      <div class="skill-tags">${skills}</div>
+      <div class="section-title">Portfolio (${(p.portfolio_items||[]).length})</div>
+      <div class="portfolio-grid">${portfolio}</div>
+      <div class="section-title">Sharhlar (${reviews.length})</div>
+      <div>${revHTML}</div>`;
+  } catch (e) {
+    console.error("Provider detail load error:", e);
+  } finally {
+    isNavigating = false;
+  }
 }
 
 function hireProvider(providerId) {
