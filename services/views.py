@@ -51,7 +51,7 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_authenticators(self):
-        if self.action in ('list', 'retrieve', 'reviews'):
+        if self.request.method == 'GET' and self.kwargs.get('pk') != 'me':
             return []
         return super().get_authenticators()
 
@@ -84,7 +84,7 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
     serializer_class = PortfolioItemSerializer
 
     def get_authenticators(self):
-        if self.action in ('list', 'retrieve'):
+        if self.request.method == 'GET':
             return []
         return super().get_authenticators()
 
@@ -198,7 +198,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_authenticators(self):
-        if self.action in ('list', 'retrieve'):
+        if self.request.method == 'GET':
             return []
         return super().get_authenticators()
 

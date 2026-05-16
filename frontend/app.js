@@ -805,15 +805,15 @@ window.openSkillsModal = async function() {
 
 async function loadMyPortfolio() {
   if (!state.providerProfileId) {
-    const r = await api('/services/providers/');
+    const r = await api('/services/providers/me/');
     if (r.ok) {
       const d = await r.json();
-      const my = (d.results || []).find(p => p.user?.id === state.user?.id);
-      if (my) state.providerProfileId = my.id;
+      state.providerProfileId = d.id;
     }
   }
   if (!state.providerProfileId) {
-    document.getElementById('portfolio-grid').innerHTML = '<div class="empty">Avval usta profilini yarating!</div>';
+    const el = document.getElementById('my-portfolio-list');
+    if (el) el.innerHTML = '<div class="empty">Avval usta profilini yarating!</div>';
     return;
   }
   const r = await api(`/services/providers/${state.providerProfileId}/portfolio/`);
@@ -824,7 +824,8 @@ async function loadMyPortfolio() {
 }
 
 function renderMyPortfolio() {
-  const grid = document.getElementById('portfolio-grid');
+  const grid = document.getElementById('my-portfolio-list');
+  if (!grid) return;
   grid.innerHTML = state.myPortfolioItems.map(item => `
     <div class="portfolio-item">
       <div class="portfolio-img-wrapper" onclick="openLightbox('${item.image_url}')">
