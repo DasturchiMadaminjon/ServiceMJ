@@ -46,12 +46,17 @@ def notify_new_service_request(request_id: int):
     try:
         req = ServiceRequest.objects.select_related('customer', 'category').get(id=request_id)
         cat_name = req.category.name if req.category else "Noma'lum"
+        budget_val = "Kelishiladi"
+        if req.budget:
+            symbol = "so'm" if req.currency == 'UZS' else "USD"
+            budget_val = f"{req.budget} {symbol}"
+
         msg = (
             f"🔔 <b>Yangi xizmat so'rovi #{req.id}</b>\n"
             f"👤 Mijoz: {req.customer.username}\n"
             f"📂 Kategoriya: {cat_name}\n"
             f"📝 Tavsif: {req.description[:200]}\n"
-            f"💰 Byudjet: {req.budget or 'Kelishiladi'}"
+            f"💰 Byudjet: {budget_val}"
         )
         send_telegram_notification.delay(msg)
     except ServiceRequest.DoesNotExist:

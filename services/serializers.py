@@ -76,7 +76,7 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'customer', 'provider', 'provider_info', 'category',
             'category_name', 'description', 'status', 'address',
-            'budget', 'created_at', 'updated_at', 'can_review'
+            'budget', 'currency', 'created_at', 'updated_at', 'can_review'
         )
         read_only_fields = ('id', 'customer', 'status', 'created_at', 'updated_at')
 

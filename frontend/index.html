@@ -157,8 +157,14 @@
     <div class="field"><label>Manzil</label>
       <input id="cr-address" type="text" placeholder="Shahar, tuman, ko'cha">
     </div>
-    <div class="field"><label>Byudjet (so'm, ixtiyoriy)</label>
-      <input id="cr-budget" type="number" placeholder="Masalan: 200000">
+    <div class="field"><label>Byudjet (ixtiyoriy)</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input id="cr-budget" type="number" placeholder="Masalan: 200000" style="flex: 1; margin: 0;">
+        <select id="cr-currency" style="width: 100px; margin: 0;">
+          <option value="UZS">so'm</option>
+          <option value="USD">USD ($)</option>
+        </select>
+      </div>
     </div>
     <div id="cr-err" class="err hidden"></div>
     <button class="btn btn-primary btn-full" onclick="createRequest()">Yuborish</button>

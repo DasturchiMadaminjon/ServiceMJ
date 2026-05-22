@@ -113,6 +113,11 @@ class ServiceRequest(models.Model):
         'cancelled':   [],
     }
 
+    CURRENCY_CHOICES = (
+        ('UZS', "so'm"),
+        ('USD', 'USD'),
+    )
+
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_requests'
     )
@@ -125,6 +130,7 @@ class ServiceRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     address = models.CharField(max_length=255, blank=True, default='')
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='UZS')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
