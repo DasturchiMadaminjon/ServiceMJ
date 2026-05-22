@@ -298,17 +298,29 @@ function getCatIcon(name) {
 }
 
 async function loadHome() {
+  const container = document.getElementById('home-categories');
+  if (!container) return;
+
   const r = await api('/services/categories/');
-  if (!r.ok) return;
+  if (!r.ok) {
+    container.innerHTML = '<p style="color:var(--text-danger);text-align:center;padding:2rem;width:100%">Kategoriyalarni yuklab bo\'lmadi. Sahifani qayta yuklang (Ctrl+F5).</p>';
+    return;
+  }
+  
   const d = await r.json();
   const cats = d.results || d;
   state.allCategories = cats; // Keshlaymiz
   
-  document.getElementById('home-categories').innerHTML = cats.map((c, i) => `
+  if (!cats || cats.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-soft);text-align:center;padding:2rem;width:100%">Hozircha kategoriyalar mavjud emas.</p>';
+    return;
+  }
+
+  container.innerHTML = cats.map((c, i) => `
     <div class="cat-card" onclick="state.providerCategoryId = ${c.id}; showPage('providers')">
       <div class="cat-icon">${getCatIcon(c.name)}</div>
       <div class="cat-name">${c.name}</div>
-    </div>`).join('') || '<p style="color:var(--text-soft);text-align:center;padding:2rem">Kategoriyalar yuklanmoqda...</p>';
+    </div>`).join('');
 }
 
 // ─── PROVIDERS ─────────────────────────────────────
