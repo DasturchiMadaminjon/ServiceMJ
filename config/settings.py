@@ -220,11 +220,11 @@ MAX_UPLOAD_SIZE             = 10 * 1024 * 1024   # serializer uchun
 
 # JAZZMIN SETTINGS
 JAZZMIN_SETTINGS = {
-    "site_title": "ServiceHub Admin",
-    "site_header": "ServiceHub",
-    "site_brand": "ServiceHub Admin",
-    "welcome_sign": "ServiceHub Boshqaruv Paneliga Xush Kelibsiz",
-    "copyright": "ServiceHub Ltd",
+    "site_title": "ServiceMJ Admin",
+    "site_header": "ServiceMJ",
+    "site_brand": "ServiceMJ Admin",
+    "welcome_sign": "ServiceMJ Boshqaruv Paneliga Xush Kelibsiz",
+    "copyright": "ServiceMJ Ltd",
     "search_model": ["accounts.CustomUser", "services.ServiceRequest"],
     "user_avatar": "avatar",
     "topmenu_links": [

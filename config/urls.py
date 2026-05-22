@@ -8,10 +8,10 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="ServiceHub API",
+        title="ServiceMJ API",
         default_version='v1',
         description="Xizmat ko'rsatuvchilar va mijozlarni bog'lovchi platforma API",
-        contact=openapi.Contact(email="support@servicehub.uz"),
+        contact=openapi.Contact(email="support@servicemj.uz"),
         license=openapi.License(name="MIT License"),
     ),
     public=True,
