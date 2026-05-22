@@ -131,15 +131,25 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         if getattr(self, 'swagger_fake_view', False):
             return ServiceRequest.objects.none()
         user = self.request.user
+        
+        # Base query filter
         if user.is_staff:
-            return ServiceRequest.objects.all().select_related('customer', 'provider', 'category')
-        if getattr(user, 'role', None) == 'client':
-            return ServiceRequest.objects.filter(customer=user).select_related('customer', 'provider', 'category')
-        if getattr(user, 'role', None) == 'provider':
-            return ServiceRequest.objects.filter(
+            qs = ServiceRequest.objects.all()
+        elif getattr(user, 'role', None) == 'client':
+            qs = ServiceRequest.objects.filter(customer=user)
+        elif getattr(user, 'role', None) == 'provider':
+            qs = ServiceRequest.objects.filter(
                 db_models.Q(provider=user) | db_models.Q(status='pending')
-            ).select_related('customer', 'provider', 'category')
-        return ServiceRequest.objects.none()
+            )
+        else:
+            return ServiceRequest.objects.none()
+
+        # Status filter
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        return qs.select_related('customer', 'provider', 'category')
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)

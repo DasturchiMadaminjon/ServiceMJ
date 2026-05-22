@@ -516,6 +516,7 @@ function providerReqCard(req, tab) {
                  <button class="btn btn-sm btn-outline" onclick="changeStatus(${req.id},'cancelled')">Bekor</button>`,
     in_progress:`<button class="btn btn-sm btn-success" onclick="changeStatus(${req.id},'completed')">🎉 Tugatdim</button>`,
     completed:  '',
+    cancelled:  '',
   };
   return `
     <div class="card">
@@ -526,7 +527,7 @@ function providerReqCard(req, tab) {
         ${req.address ? ` · 📍 ${req.address}` : ''}</div>
       <div style="font-size:.83rem;margin-bottom:.5rem">${req.description.slice(0,120)}</div>
       <span class="status status-${req.status}">${statusLabel(req.status)}</span>
-      <div class="card-actions">${actions[tab] || ''}</div>
+      <div class="card-actions">${actions[req.status] || ''}</div>
     </div>`;
 }
 
