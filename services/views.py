@@ -57,11 +57,16 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'reviews'):
+            if self.kwargs.get('pk') == 'me':
+                return [permissions.IsAuthenticated()]
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated(), IsProvider()]
 
     def get_object(self):
         if self.kwargs.get('pk') == 'me':
+            if not self.request.user.is_authenticated:
+                from rest_framework.exceptions import NotAuthenticated
+                raise NotAuthenticated()
             return get_object_or_404(ProviderProfile, user=self.request.user)
         return super().get_object()
 
