@@ -362,13 +362,16 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
   }
   if (state.providerCategoryId) url += `&skills__category=${state.providerCategoryId}`;
 
-  const r = await api(url);
-  if (!r.ok) return;
-  const d = await r.json();
   const list = document.getElementById('providers-list');
+  const r = await api(url);
+  if (!r.ok) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>Ustalarni yuklab bo'lmadi.<br><button class="btn btn-sm btn-outline" onclick="loadProviders(${page},'${ordering}')">🔄 Qayta urinish</button></div>`;
+    return;
+  }
+  const d = await r.json();
   const emptyMsg = state.providerCategoryId 
     ? `<div class="empty"><div class="empty-icon">😔</div>Bu kategoriyada hozircha ustalar yo'q.<br><span class="link" onclick="state.providerCategoryId=null; loadProviders(1)">Barcha ustalarni ko'rish</span></div>`
-    : `<div class="empty"><div class="empty-icon">😔</div>Usta topilmadi</div>`;
+    : `<div class="empty"><div class="empty-icon">😔</div>Hozircha ro'yxatdan o'tgan ustalar yo'q.</div>`;
     
   list.innerHTML = (d.results || []).map(provCard).join('') || emptyMsg;
   renderPagination('providers-pagination', d, p => loadProviders(p, ordering, categoryId));
@@ -800,23 +803,35 @@ window.filterSkills = function() {
 // ─── PROVIDER PROFILE ─────────────────────────────
 async function loadProviderProfile() {
   const r = await api('/services/providers/me/');
-  if (r.ok) {
-    const d = await r.json();
-    state.providerProfileId = d.id;
-    document.getElementById('pp-bio').value = d.bio || '';
-    document.getElementById('pp-exp').value = d.experience_years || 0;
-    document.getElementById('pp-rate').value = d.hourly_rate || '';
-    state.selectedSkillIds = d.skills || [];
-    
-    if (!(state.allSkills || []).length) {
-      const rs = await api('/services/skills/');
-      if (rs.ok) {
-        const ds = await rs.json();
-        state.allSkills = ds.results || ds;
-      }
-    }
+  if (r.status === 404) {
+    // Profil hali yaratilmagan — bu normal holat, xatosiz o'tamiz
+    state.providerProfileId = null;
+    document.getElementById('pp-bio').value = '';
+    document.getElementById('pp-exp').value = 0;
+    document.getElementById('pp-rate').value = '';
+    state.selectedSkillIds = [];
     renderSelectedSkills();
+    return;
   }
+  if (!r.ok) {
+    console.warn('loadProviderProfile xato:', r.status);
+    return;
+  }
+  const d = await r.json();
+  state.providerProfileId = d.id;
+  document.getElementById('pp-bio').value = d.bio || '';
+  document.getElementById('pp-exp').value = d.experience_years || 0;
+  document.getElementById('pp-rate').value = d.hourly_rate || '';
+  state.selectedSkillIds = d.skills || [];
+  
+  if (!(state.allSkills || []).length) {
+    const rs = await api('/services/skills/');
+    if (rs.ok) {
+      const ds = await rs.json();
+      state.allSkills = ds.results || ds;
+    }
+  }
+  renderSelectedSkills();
 }
 
 function renderSelectedSkills() {
