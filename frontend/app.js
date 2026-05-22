@@ -481,7 +481,7 @@ function clientReqCard(req) {
     <div class="card">
       <div class="card-title">${req.category_name || 'Kategoriyasiz'}</div>
       <div class="card-meta">📅 ${new Date(req.created_at).toLocaleDateString('uz-UZ')}
-        ${req.budget ? ` · 💰 ${Number(req.budget).toLocaleString()} so'm` : ''}
+        ${req.budget ? ` · 💰 ${Number(req.budget).toLocaleString()} ${req.currency === 'USD' ? 'USD' : "so'm"}` : ''}
         ${req.provider_info ? ` · 🔧 ${req.provider_info.username}` : ''}</div>
       <div style="font-size:.83rem;margin-bottom:.5rem">${req.description.slice(0,100)}...</div>
       <span class="status status-${req.status}">${statusLabel(req.status)}</span>
@@ -522,7 +522,7 @@ function providerReqCard(req, tab) {
       <div class="card-title">${req.category_name || 'Kategoriyasiz'}</div>
       <div class="card-meta">👤 ${req.customer?.username}
         · 📅 ${new Date(req.created_at).toLocaleDateString('uz-UZ')}
-        ${req.budget ? ` · 💰 ${Number(req.budget).toLocaleString()} so'm` : ''}
+        ${req.budget ? ` · 💰 ${Number(req.budget).toLocaleString()} ${req.currency === 'USD' ? 'USD' : "so'm"}` : ''}
         ${req.address ? ` · 📍 ${req.address}` : ''}</div>
       <div style="font-size:.83rem;margin-bottom:.5rem">${req.description.slice(0,120)}</div>
       <span class="status status-${req.status}">${statusLabel(req.status)}</span>
