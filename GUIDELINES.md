@@ -1,4 +1,4 @@
-# ServiceHub Project Guidelines & Best Practices
+# ServiceMJ Project Guidelines & Best Practices
 
 Ushbu hujjat loyihaning barqarorligini va sifatini ta'minlash uchun asosiy qoidalar to'plamidir.
 

@@ -1,4 +1,4 @@
-# 🚀 ServiceHub.uz — Mahalliy Ustalar va Xizmatlar Bozorini Raqamlashtirish Platformasi
+# 🚀 ServiceMJ.uz — Mahalliy Ustalar va Xizmatlar Bozorini Raqamlashtirish Platformasi
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-4.2+-green.svg)](https://www.djangoproject.com/)
@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-ServiceHub.uz — O'zbekistondagi xizmat ko'rsatish sohasidagi muammolarni (santexnik, elektrchi, kur'er va h.k.) hal qilish uchun yaratilgan professional **Backend API** platformasi. Loyiha tadbirkorlar (ustalar) va mijozlar o'rtasida ishonchli ko'prik vazifasini o'taydi.
+ServiceMJ.uz — O'zbekistondagi xizmat ko'rsatish sohasidagi muammolarni (santexnik, elektrchi, kur'er va h.k.) hal qilish uchun yaratilgan professional **Backend API** platformasi. Loyiha tadbirkorlar (ustalar) va mijozlar o'rtasida ishonchli ko'prik vazifasini o'taydi.
 
 ---
 
@@ -14,7 +14,7 @@ ServiceHub.uz — O'zbekistondagi xizmat ko'rsatish sohasidagi muammolarni (sant
 
 O‘zbekistonda ishonchli ustani topish ko'p hollarda "og‘zaki tavsiya" yoki ijtimoiy tarmoqlardagi tasodifiy e'lonlarga tayanadi. Bu esa vaqt yo'qotish va sifatsiz xizmat xavfini tug'diradi. 
 
-**ServiceHub.uz** ushbu jarayonni raqamlashtiradi:
+**ServiceMJ.uz** ushbu jarayonni raqamlashtiradi:
 - **Ustalar uchun:** Doimiy buyurtmalar oqimi, professional profil va reyting tizimi.
 - **Mijoz for:** Hududiy yaqinlik, sharhlar va shaffof narxlar asosida tezkor tanlov.
 
@@ -122,7 +122,7 @@ Loyiha AWS EC2 serverida Docker-compose yordamida joylashtirilgan. Nginx konteyn
 **Komiljon Xamidjonov**  
 *Backend Development Kursi bitiruvchisi (2025)*
 
-> **Tavsiyanoma:** ServiceHub.uz — nafaqat kurs ishi, balki O'zbekiston xizmatlar bozorini raqamlashtirish sari qo'yilgan professional qadamdir. Loyiha kengayishga va real biznes talablariga to'liq javob beradi.
+> **Tavsiyanoma:** ServiceMJ.uz — nafaqat kurs ishi, balki O'zbekiston xizmatlar bozorini raqamlashtirish sari qo'yilgan professional qadamdir. Loyiha kengayishga va real biznes talablariga to'liq javob beradi.
 
 ---
-© 2026 ServiceHub Team. Barcha huquqlar himoyalangan.
+© 2026 ServiceMJ Team. Barcha huquqlar himoyalangan.

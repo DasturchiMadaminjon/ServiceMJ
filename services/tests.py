@@ -1,5 +1,5 @@
 """
-ServiceHub — To'liq TDD Test Suite
+ServiceMJ — To'liq TDD Test Suite
 Qamrov: 1 oylik real foydalanish stsenariylarini qamrab oladi
 """
 from django.urls import reverse

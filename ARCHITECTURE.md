@@ -1,4 +1,4 @@
-# ServiceHub — Loyiha Arxitekturasi 🏗️
+# ServiceMJ — Loyiha Arxitekturasi 🏗️
 
 Ushbu hujjat loyihaning texnik tuzilishi, modullar orasidagi bog'liqlik va xavfsizlik qoidalarini belgilaydi.
 
