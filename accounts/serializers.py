@@ -21,6 +21,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_phone_number(self, value):
+        if not value or value.strip() == '':
+            return None
+        return value
+
     def create(self, validated_data):
         return CustomUser.objects.create_user(
             username=validated_data['username'],
@@ -58,6 +63,11 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"Rasm hajmi {mb:.1f} MB. Maksimal ruxsat etilgan hajm: 10 MB."
             )
+        return value
+
+    def validate_phone_number(self, value):
+        if not value or value.strip() == '':
+            return None
         return value
 
     def update(self, instance, validated_data):

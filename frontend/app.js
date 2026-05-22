@@ -675,10 +675,11 @@ window.verifyOTP = async function() {
 }
 
 async function saveProfile() {
+  const phone = document.getElementById('p-phone').value.trim();
   const body = {
     username:     document.getElementById('p-username').value.trim(),
     email:        document.getElementById('p-email').value.trim(),
-    phone_number: document.getElementById('p-phone').value.trim(),
+    phone_number: phone || null,
     role:         document.getElementById('p-role').value,
   };
   
