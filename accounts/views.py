@@ -434,3 +434,50 @@ class VerifyOTPView(APIView):
             {'detail': 'Kod noto\'g\'ri yoki muddati o\'tgan.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class ChangeRoleView(APIView):
+    """
+    Foydalanuvchi rolini o'zgartirish ('client' yoki 'provider').
+    Agar rol 'provider' ga o'zgarsa, avtomatik ProviderProfile yaratiladi.
+
+    POST /api/accounts/change-role/
+    Body: { "role": "provider" }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        new_role = request.data.get('role')
+        if new_role not in ['client', 'provider']:
+            return Response(
+                {'detail': "Rol faqat 'client' yoki 'provider' bo'lishi mumkin."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        if user.role == new_role:
+            return Response(
+                {'detail': f"Siz allaqachon '{new_role}' rolidasiz."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Rolni o'zgartirish
+        user.role = new_role
+        user.save(update_fields=['role'])
+
+        # Agar provider ga o'tayotgan bo'lsa, profilini yaratish
+        if new_role == 'provider':
+            from services.models import ProviderProfile
+            ProviderProfile.objects.get_or_create(
+                user=user,
+                defaults={'bio': '', 'experience_years': 0}
+            )
+
+        logger.info(
+            "[AUTH] Rol o'zgartirildi | user=%s | new_role=%s", 
+            user.username, new_role
+        )
+        return Response({
+            'detail': f"Rol muvaffaqiyatli '{new_role}' ga o'zgartirildi.",
+            'role': new_role
+        })

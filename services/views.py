@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,6 +14,8 @@ from .serializers import (
 )
 from orders.models import Review
 from orders.serializers import ReviewSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -89,6 +93,7 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
         if ProviderProfile.objects.filter(user=self.request.user).exists():
             from rest_framework.exceptions import ValidationError
             raise ValidationError("Siz allaqachon profil yaratgansiz.")
+        # save() metodi avtomatik user.role = 'provider' qiladi
         serializer.save(user=self.request.user)
 
     @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
@@ -125,7 +130,17 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
         return PortfolioItem.objects.none()
 
     def perform_create(self, serializer):
-        profile = get_object_or_404(ProviderProfile, user=self.request.user)
+        # get_or_create: agar profil bo'lmasa, avtomatik yaratiladi
+        # Bu eski foydalanuvchilar uchun ham ishlaydi
+        profile, created = ProviderProfile.objects.get_or_create(
+            user=self.request.user,
+            defaults={'bio': '', 'experience_years': 0}
+        )
+        if created:
+            logger.info(
+                "[PORTFOLIO] ProviderProfile avtomatik yaratildi | user=%s",
+                self.request.user.username
+            )
         serializer.save(provider=profile)
 
 

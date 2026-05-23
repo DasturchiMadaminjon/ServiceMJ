@@ -10,6 +10,7 @@ from .views import (
     VerifyOTPView,
     DeviceListView,
     DeviceDeleteView,
+    ChangeRoleView,
 )
 
 urlpatterns = [
@@ -24,6 +25,7 @@ urlpatterns = [
 
     # ── Profil ─────────────────────────────────────────────────────
     path('profile/',        ProfileView.as_view(),        name='profile'),
+    path('change-role/',    ChangeRoleView.as_view(),     name='change_role'),
 
     # ── OTP tasdiqlash ─────────────────────────────────────────────
     path('send-otp/',       SendOTPView.as_view(),        name='send_otp'),
