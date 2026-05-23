@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 
 
 class Category(models.Model):
@@ -50,6 +50,20 @@ class ProviderProfile(models.Model):
     def __str__(self):
         return f"Usta: {self.user.username}"
 
+    def save(self, *args, **kwargs):
+        # Profil yaratilganda foydalanuvchi rolini avtomatik 'provider' ga o'zgartiramiz
+        if self.user and self.user.role != 'provider':
+            self.user.role = 'provider'
+            self.user.save(update_fields=['role'])
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        user = self.user
+        super().delete(*args, **kwargs)
+        if user and user.role == 'provider':
+            user.role = 'client'
+            user.save(update_fields=['role'])
+
     def update_rating(self):
         from django.db.models import Avg
         reviews = self.user.received_reviews.all()
@@ -68,6 +82,12 @@ class PortfolioItem(models.Model):
     image = models.ImageField(
         upload_to='portfolio/',
         null=True, blank=True,
+        validators=[FileExtensionValidator(
+            allowed_extensions=[
+                'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp',
+                'tiff', 'tif', 'heic', 'heif', 'avif',
+            ]
+        )],
         help_text='Portfolio rasmi. Maksimal 10 MB. Avtomatik siqiladi.'
     )
     created_at = models.DateTimeField(auto_now_add=True)

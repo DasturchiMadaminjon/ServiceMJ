@@ -48,7 +48,21 @@ class ProviderProfileViewSet(viewsets.ModelViewSet):
         qs = ProviderProfile.objects.filter(is_active=True).select_related('user').prefetch_related('skills')
         category_id = self.request.query_params.get('skills__category')
         if category_id:
-            qs = qs.filter(skills__category_id=category_id).distinct()
+            try:
+                category_ids = [int(category_id)]
+                
+                def get_all_descendants(cat_id):
+                    sub_ids = list(Category.objects.filter(parent_id=cat_id).values_list('id', flat=True))
+                    descendants = []
+                    for s_id in sub_ids:
+                        descendants.append(s_id)
+                        descendants.extend(get_all_descendants(s_id))
+                    return descendants
+
+                category_ids.extend(get_all_descendants(int(category_id)))
+                qs = qs.filter(skills__category_id__in=category_ids).distinct()
+            except ValueError:
+                pass
         return qs
 
     def get_authenticators(self):
