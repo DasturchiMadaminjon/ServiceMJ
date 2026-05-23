@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "accounts",
     "services",
+    "orders",
 ]
 
 MIDDLEWARE = [
@@ -112,6 +113,13 @@ if TESTING:
     CELERY_TASK_EAGER_PROPAGATES = False
     CELERY_BROKER_URL = 'memory://'
     CELERY_RESULT_BACKEND = 'cache+memory://'
+    # Test muhitida Redis o'rniga xotira keshi
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'test-cache',
+        }
+    }
 else:
     DATABASES = {
         'default': dj_database_url.config(
@@ -119,15 +127,16 @@ else:
         )
     }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+if not TESTING:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
         }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -147,7 +156,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    'DEFAULT_THROTTLE_CLASSES': [
+    # Test muhitida throttling o'chiriladi (Redis talab qiladi)
+    'DEFAULT_THROTTLE_CLASSES': [] if TESTING else [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
@@ -162,10 +172,13 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
+    'ACCESS_TOKEN_LIFETIME':    timedelta(minutes=15),   # Qisqa (xavfsizlik uchun)
+    'REFRESH_TOKEN_LIFETIME':   timedelta(days=30),       # Telegram kabi — 30 kun
+    'ROTATE_REFRESH_TOKENS':    True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN':        True,
+    'ALGORITHM':                'HS256',
+    'AUTH_HEADER_TYPES':        ('Bearer',),
 }
 
 # Celery
@@ -212,11 +225,12 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
 }
 
-# Fayl yuklash limiti: 10 MB
-# Rasm backend tomonidan avtomatik siqiladi (WebP, 1200x1200)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
-MAX_UPLOAD_SIZE             = 10 * 1024 * 1024   # serializer uchun
+# Fayl yuklash limiti: 50 MB
+# Rasm backend tomonidan avtomatik siqiladi (WebP, 2400×2400, 88%)
+# 50 MB yuklansa ham, serverda kichik hajmda saqlanadi
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024   # 50 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024   # 50 MB
+MAX_UPLOAD_SIZE             = 50 * 1024 * 1024   # serializer uchun
 
 # JAZZMIN SETTINGS
 JAZZMIN_SETTINGS = {
@@ -225,7 +239,7 @@ JAZZMIN_SETTINGS = {
     "site_brand": "ServiceMJ Admin",
     "welcome_sign": "ServiceMJ Boshqaruv Paneliga Xush Kelibsiz",
     "copyright": "ServiceMJ Ltd",
-    "search_model": ["accounts.CustomUser", "services.ServiceRequest"],
+    "search_model": ["accounts.CustomUser", "orders.ServiceRequest"],
     "user_avatar": "avatar",
     "topmenu_links": [
         {"name": "Bosh sahifa", "url": "admin:index", "permissions": ["auth.view_user"]},
@@ -236,10 +250,10 @@ JAZZMIN_SETTINGS = {
     "icons": {
         "accounts.CustomUser": "fas fa-users",
         "auth.Group": "fas fa-users-cog",
-        "services.ServiceRequest": "fas fa-tasks",
+        "orders.ServiceRequest": "fas fa-tasks",
         "services.Category": "fas fa-list",
         "services.ProviderProfile": "fas fa-user-tie",
-        "services.Review": "fas fa-star",
+        "orders.Review": "fas fa-star",
     },
     "order_with_respect_to": ["accounts", "services"],
     "theme": "flatly",
@@ -266,4 +280,45 @@ JAZZMIN_UI_CONFIG = {
     "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'app.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'orders': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'services': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }

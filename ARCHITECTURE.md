@@ -10,9 +10,9 @@ Ushbu hujjat loyihaning texnik tuzilishi, modullar orasidagi bog'liqlik va xavfs
 - **Infrastruktura:** Docker Compose
 
 ## 📁 Modullar va Mas'uliyatlar
-1. **`accounts`**: Foydalanuvchilar, profil boshqaruvi va OTP (SMS) autentifikatsiyasi.
-2. **`services`**: Ustalar (Providers), ko'nikmalar (Skills) va portfolioni boshqarish.
-3. **`orders`**: Mijozlar va ustalar orasidagi buyurtmalar zanjiri.
+1. **`accounts`**: Foydalanuvchilar, profil boshqaruvi, qurilmalar va OTP (SMS) autentifikatsiyasi.
+2. **`services`**: Ustalar (Providers), ko'nikmalar (Skills), kategoriya va portfolioni boshqarish.
+3. **`orders`**: Mijozlar va ustalar orasidagi xizmat so'rovlari (ServiceRequest) va sharhlar (Review). Tranzaksiyalar yordamida qulflash (select_for_update) va holat boshqaruvi.
 4. **`frontend`**: Statik fayllar (index.html, app.js, style.css).
 
 ## 🔐 Xavfsizlik Tamoyillari

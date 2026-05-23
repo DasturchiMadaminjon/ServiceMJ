@@ -10,9 +10,9 @@ from unittest.mock import patch, MagicMock
 from decimal import Decimal
 
 from accounts.models import CustomUser
-from services.models import (
-    Category, Skill, ProviderProfile, PortfolioItem, ServiceRequest, Review
-)
+from services.models import Category, Skill, ProviderProfile, PortfolioItem
+from orders.models import ServiceRequest, Review
+from orders.tasks import notify_new_service_request, notify_status_changed
 from services.tasks import send_telegram_notification
 
 
@@ -328,8 +328,8 @@ class ServiceRequestCreateTest(APITestCase):
 
     def test_client_can_create_request(self):
         self.client.force_authenticate(user=self.client_user)
-        with patch('services.tasks.notify_new_service_request.delay'):
-            r = self.client.post('/api/services/requests/', {
+        with patch('orders.tasks.notify_new_service_request.delay'):
+            r = self.client.post('/api/orders/requests/', {
                 'description': 'Chiroq ishlamaydi',
                 'category': self.cat.id,
                 'budget': '150000',
@@ -342,21 +342,21 @@ class ServiceRequestCreateTest(APITestCase):
     def test_provider_cannot_create_request(self):
         """Provider buyurtma yarata olmaydi — muhim biznes qoida."""
         self.client.force_authenticate(user=self.provider_user)
-        r = self.client.post('/api/services/requests/', {
+        r = self.client.post('/api/orders/requests/', {
             'description': 'Provider test', 'category': self.cat.id
         }, format='json')
         self.assertEqual(r.status_code, 403)
 
     def test_unauthenticated_cannot_create_request(self):
-        r = self.client.post('/api/services/requests/', {
+        r = self.client.post('/api/orders/requests/', {
             'description': 'Test', 'category': self.cat.id
         }, format='json')
         self.assertEqual(r.status_code, 401)
 
     def test_empty_description_rejected(self):
         self.client.force_authenticate(user=self.client_user)
-        with patch('services.tasks.notify_new_service_request.delay'):
-            r = self.client.post('/api/services/requests/', {
+        with patch('orders.tasks.notify_new_service_request.delay'):
+            r = self.client.post('/api/orders/requests/', {
                 'description': '', 'category': self.cat.id
             }, format='json')
         self.assertEqual(r.status_code, 400)
@@ -368,20 +368,20 @@ class ServiceRequestListTest(APITestCase):
         self.client2 = make_client('list_cl2', '998908888002')
         self.provider1 = make_provider('list_pr1', '998908888003')
         self.cat = make_category('Santex')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             self.req1 = make_request(self.client1, self.cat, description='Mijoz 1 so\'rovi')
             self.req2 = make_request(self.client2, self.cat, description='Mijoz 2 so\'rovi')
 
     def test_client_sees_only_own_requests(self):
         self.client.force_authenticate(user=self.client1)
-        r = self.client.get('/api/services/requests/')
+        r = self.client.get('/api/orders/requests/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data['count'], 1)
         self.assertEqual(r.data['results'][0]['customer']['username'], 'list_cl1')
 
     def test_provider_sees_pending_and_own(self):
         self.client.force_authenticate(user=self.provider1)
-        r = self.client.get('/api/services/requests/')
+        r = self.client.get('/api/orders/requests/')
         self.assertEqual(r.status_code, 200)
         # Ikki pending so'rov ko'rinadi
         self.assertEqual(r.data['count'], 2)
@@ -389,20 +389,20 @@ class ServiceRequestListTest(APITestCase):
     def test_admin_sees_all_requests(self):
         admin = make_admin()
         self.client.force_authenticate(user=admin)
-        r = self.client.get('/api/services/requests/')
+        r = self.client.get('/api/orders/requests/')
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(r.data['count'], 2)
 
     def test_my_requests_filter_by_status(self):
         self.client.force_authenticate(user=self.client1)
-        r = self.client.get('/api/services/my-requests/?status=pending')
+        r = self.client.get('/api/orders/my-requests/?status=pending')
         self.assertEqual(r.status_code, 200)
         results = r.data.get('results', r.data)
         self.assertEqual(len(results), 1)
 
     def test_pagination_works(self):
         self.client.force_authenticate(user=self.client1)
-        r = self.client.get('/api/services/requests/?page=1')
+        r = self.client.get('/api/orders/requests/?page=1')
         self.assertEqual(r.status_code, 200)
         self.assertIn('results', r.data)
         self.assertIn('count', r.data)
@@ -415,15 +415,15 @@ class ServiceRequestStatusFlowTest(APITestCase):
         self.client_user = make_client('flow_cl', '998909999001')
         self.provider_user = make_provider('flow_pr', '998909999002')
         self.cat = make_category('Quvur')
-        with patch('services.tasks.notify_new_service_request.delay'),              patch('services.tasks.notify_status_changed.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'),              patch('orders.tasks.notify_status_changed.delay'):
             self.req = make_request(self.client_user, self.cat)
         # Patch status changed for all tests in this class
-        patcher = patch('services.tasks.notify_status_changed.delay')
+        patcher = patch('orders.tasks.notify_status_changed.delay')
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def _status_url(self):
-        return f'/api/services/requests/{self.req.id}/status/'
+        return f'/api/orders/requests/{self.req.id}/status/'
 
     def test_pending_to_accepted_by_provider(self):
         self.client.force_authenticate(user=self.provider_user)
@@ -492,12 +492,12 @@ class ServiceRequestEditTest(APITestCase):
     def setUp(self):
         self.client_user = make_client('edit_cl', '998900000101')
         self.cat = make_category('Elek')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             self.req = make_request(self.client_user, self.cat)
 
     def test_owner_can_edit_pending(self):
         self.client.force_authenticate(user=self.client_user)
-        r = self.client.patch(f'/api/services/requests/{self.req.id}/', {
+        r = self.client.patch(f'/api/orders/requests/{self.req.id}/', {
             'description': 'Yangilangan tavsif'
         }, format='json')
         self.assertEqual(r.status_code, 200)
@@ -506,7 +506,7 @@ class ServiceRequestEditTest(APITestCase):
         self.req.status = 'accepted'
         self.req.save()
         self.client.force_authenticate(user=self.client_user)
-        r = self.client.patch(f'/api/services/requests/{self.req.id}/', {
+        r = self.client.patch(f'/api/orders/requests/{self.req.id}/', {
             'description': 'O\'zgartirishga urinish'
         }, format='json')
         self.assertEqual(r.status_code, 400)
@@ -514,7 +514,7 @@ class ServiceRequestEditTest(APITestCase):
     def test_other_client_cannot_edit(self):
         other = make_client('other_cl', '998900000102')
         self.client.force_authenticate(user=other)
-        r = self.client.patch(f'/api/services/requests/{self.req.id}/', {
+        r = self.client.patch(f'/api/orders/requests/{self.req.id}/', {
             'description': 'Ruxsatsiz'
         }, format='json')
         # 404 — boshqa client so'rovni ko'rmaydi (queryset filterlaydi)
@@ -529,14 +529,14 @@ class ReviewTest(APITestCase):
         self.client_user = make_client('rev_cl', '998900000201')
         self.provider_user = make_provider('rev_pr', '998900000202')
         self.cat = make_category('Derazalar')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             self.req = make_request(self.client_user, self.cat, status='completed')
         self.req.provider = self.provider_user
         self.req.save()
 
     def test_client_can_review_completed(self):
         self.client.force_authenticate(user=self.client_user)
-        r = self.client.post('/api/services/reviews/', {
+        r = self.client.post('/api/orders/reviews/', {
             'service_request': self.req.id,
             'rating': 5,
             'comment': 'Juda yaxshi usta!'
@@ -550,23 +550,23 @@ class ReviewTest(APITestCase):
             provider=self.provider_user, rating=4
         )
         self.client.force_authenticate(user=self.client_user)
-        r = self.client.post('/api/services/reviews/', {
+        r = self.client.post('/api/orders/reviews/', {
             'service_request': self.req.id, 'rating': 3
         }, format='json')
         self.assertEqual(r.status_code, 400)
 
     def test_review_on_pending_rejected(self):
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             pending_req = make_request(self.client_user, self.cat)
         self.client.force_authenticate(user=self.client_user)
-        r = self.client.post('/api/services/reviews/', {
+        r = self.client.post('/api/orders/reviews/', {
             'service_request': pending_req.id, 'rating': 5
         }, format='json')
         self.assertEqual(r.status_code, 400)
 
     def test_provider_cannot_review(self):
         self.client.force_authenticate(user=self.provider_user)
-        r = self.client.post('/api/services/reviews/', {
+        r = self.client.post('/api/orders/reviews/', {
             'service_request': self.req.id, 'rating': 5
         }, format='json')
         self.assertEqual(r.status_code, 403)
@@ -574,21 +574,21 @@ class ReviewTest(APITestCase):
     def test_rating_must_be_1_to_5(self):
         self.client.force_authenticate(user=self.client_user)
         for bad_rating in [0, 6, -1]:
-            r = self.client.post('/api/services/reviews/', {
+            r = self.client.post('/api/orders/reviews/', {
                 'service_request': self.req.id, 'rating': bad_rating
             }, format='json')
             self.assertIn(r.status_code, [400, 201])
 
     def test_provider_rating_updated_after_review(self):
         self.client.force_authenticate(user=self.client_user)
-        self.client.post('/api/services/reviews/', {
+        self.client.post('/api/orders/reviews/', {
             'service_request': self.req.id, 'rating': 4, 'comment': 'Yaxshi'
         }, format='json')
         self.provider_user.provider_profile.refresh_from_db()
         self.assertEqual(float(self.provider_user.provider_profile.rating), 4.0)
 
     def test_list_reviews_no_auth(self):
-        r = self.client.get('/api/services/reviews/')
+        r = self.client.get('/api/orders/reviews/')
         self.assertEqual(r.status_code, 200)
 
     def test_provider_reviews_via_profile(self):
@@ -650,22 +650,22 @@ class TelegramTaskTest(TestCase):
         mock_post.assert_not_called()
         self.assertEqual(result['status'], 'skipped')
 
-    @patch('services.tasks.requests.post')
-    def test_handles_telegram_error_gracefully(self, mock_post):
+    def test_handles_telegram_error_gracefully(self):
         """Network xato bo'lsa task crash bo'lmaydi."""
         import requests as req
-        mock_post.side_effect = req.RequestException("Connection error")
-        with self.settings(
-            TELEGRAM_BOT_TOKEN='token',
-            TELEGRAM_ADMIN_CHAT_IDS=['111'],
-        ):
-            from celery.exceptions import Retry
-            try:
-                result = send_telegram_notification('Test')
-            except (Retry, req.RequestException, Exception):
-                pass  # Retry mexanizmi ishladi — test o'tdi
-        # Test o'tdi — exception propagate bo'lmadi yoki Retry raised
-        self.assertTrue(True)
+        with patch('requests.post') as mock_post:
+            mock_post.side_effect = req.RequestException("Connection error")
+            with self.settings(
+                TELEGRAM_BOT_TOKEN='token',
+                TELEGRAM_ADMIN_CHAT_IDS=['111'],
+            ):
+                from celery.exceptions import Retry
+                try:
+                    result = send_telegram_notification('Test')
+                except (Retry, req.RequestException, Exception):
+                    pass  # Retry mexanizmi ishladi — test o'tdi
+            # Test o'tdi — exception propagate bo'lmadi yoki Retry raised
+            self.assertTrue(True)
 
 
 # ═══════════════════════════════════════════════════
@@ -675,7 +675,7 @@ class StatusFlowModelTest(TestCase):
     def setUp(self):
         self.client_user = make_client('model_cl', '998900000401')
         self.cat = make_category('Model Test')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             self.req = make_request(self.client_user, self.cat)
 
     def test_pending_can_go_to_accepted(self):
@@ -707,7 +707,7 @@ class PaginationSearchTest(APITestCase):
         # 25 ta so'rov yarat
         cat = make_category('Pagination Test')
         cl = make_client('pg_cl', '998900000501')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             for i in range(25):
                 ServiceRequest.objects.create(
                     customer=cl, category=cat,
@@ -716,7 +716,7 @@ class PaginationSearchTest(APITestCase):
 
     def test_first_page_has_20_items(self):
         self.client.force_authenticate(user=self.admin)
-        r = self.client.get('/api/services/requests/')
+        r = self.client.get('/api/orders/requests/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data['results']), 20)
         self.assertEqual(r.data['count'], 25)
@@ -724,14 +724,14 @@ class PaginationSearchTest(APITestCase):
 
     def test_second_page_has_remaining(self):
         self.client.force_authenticate(user=self.admin)
-        r = self.client.get('/api/services/requests/?page=2')
+        r = self.client.get('/api/orders/requests/?page=2')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data['results']), 5)
         self.assertIsNone(r.data['next'])
 
     def test_search_requests(self):
         self.client.force_authenticate(user=self.admin)
-        r = self.client.get('/api/services/requests/?search=So\'rov 1')
+        r = self.client.get('/api/orders/requests/?search=So\'rov 1')
         self.assertEqual(r.status_code, 200)
         self.assertGreater(r.data['count'], 0)
 
@@ -769,11 +769,11 @@ class StressScenarioTest(APITestCase):
             u = make_client(f'stress_cl_{i}', f'99890{i:07d}')
             clients_list.append(u)
 
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             for u in clients_list:
                 api = APIClient()
                 api.force_authenticate(user=u)
-                r = api.post('/api/services/requests/', {
+                r = api.post('/api/orders/requests/', {
                     'description': f'Stress so\'rov {u.username}',
                     'category': self.cat.id
                 }, format='json')
@@ -784,20 +784,20 @@ class StressScenarioTest(APITestCase):
     def test_same_request_accepted_only_once(self):
         """Bir so'rovni faqat bitta usta qabul qila oladi."""
         cl = make_client('stress_owner', '998900099901')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             req = make_request(cl, self.cat)
         p1 = make_provider('stress_p1', '998900099902')
         p2 = make_provider('stress_p2', '998900099903')
 
         api1 = APIClient()
         api1.force_authenticate(user=p1)
-        with patch('services.tasks.notify_status_changed.delay'):
-            r1 = api1.patch(f'/api/services/requests/{req.id}/status/', {'status': 'accepted'}, format='json')
+        with patch('orders.tasks.notify_status_changed.delay'):
+            r1 = api1.patch(f'/api/orders/requests/{req.id}/status/', {'status': 'accepted'}, format='json')
 
         api2 = APIClient()
         api2.force_authenticate(user=p2)
-        with patch('services.tasks.notify_status_changed.delay'):
-            r2 = api2.patch(f'/api/services/requests/{req.id}/status/', {'status': 'accepted'}, format='json')
+        with patch('orders.tasks.notify_status_changed.delay'):
+            r2 = api2.patch(f'/api/orders/requests/{req.id}/status/', {'status': 'accepted'}, format='json')
 
         # Ikkisidan biri muvaffaqiyatli, ikkinchisi xato
         statuses = {r1.status_code, r2.status_code}
@@ -811,7 +811,7 @@ class StressScenarioTest(APITestCase):
         cl = make_client('rating_cl', '998900099801')
         pr = make_provider('rating_pr', '998900099802')
         total_rating = 0
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             for i in range(10):
                 req = ServiceRequest.objects.create(
                     customer=cl, category=self.cat,
@@ -834,14 +834,14 @@ class StressScenarioTest(APITestCase):
         """Usta o'z ishiga sharh yoza olmaydi."""
         cl = make_client('self_rev_cl', '998900099701')
         pr = make_provider('self_rev_pr', '998900099702')
-        with patch('services.tasks.notify_new_service_request.delay'):
+        with patch('orders.tasks.notify_new_service_request.delay'):
             req = make_request(cl, self.cat, status='completed')
         req.provider = pr
         req.save()
 
         api = APIClient()
         api.force_authenticate(user=pr)  # provider sharh yozmoqchi
-        r = api.post('/api/services/reviews/', {
+        r = api.post('/api/orders/reviews/', {
             'service_request': req.id, 'rating': 5
         }, format='json')
         self.assertEqual(r.status_code, 403)
@@ -891,8 +891,8 @@ class FullMonthScenarioTest(APITestCase):
 
         # 4. Ahror so'rov beradi
         self.client.force_authenticate(user=ahror)
-        with patch('services.tasks.notify_new_service_request.delay'):
-            r = self.client.post('/api/services/requests/', {
+        with patch('orders.tasks.notify_new_service_request.delay'):
+            r = self.client.post('/api/orders/requests/', {
                 'description': 'Hammom kranini almashtirish kerak',
                 'category': cat.id,
                 'budget': '200000',
@@ -903,35 +903,35 @@ class FullMonthScenarioTest(APITestCase):
 
         # 5. Botir so'rovni ko'radi
         self.client.force_authenticate(user=botir)
-        r = self.client.get('/api/services/requests/')
+        r = self.client.get('/api/orders/requests/')
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(r.data['count'], 1)
 
         # 6. Botir qabul qiladi
-        with patch('services.tasks.notify_status_changed.delay'):
+        with patch('orders.tasks.notify_status_changed.delay'):
             r = self.client.patch(
-                f'/api/services/requests/{req_id}/status/', {'status': 'accepted'}, format='json'
+                f'/api/orders/requests/{req_id}/status/', {'status': 'accepted'}, format='json'
             )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data['status'], 'accepted')
 
         # 7. Ishni boshlaydi
-        with patch('services.tasks.notify_status_changed.delay'):
+        with patch('orders.tasks.notify_status_changed.delay'):
             r = self.client.patch(
-                f'/api/services/requests/{req_id}/status/', {'status': 'in_progress'}, format='json'
+                f'/api/orders/requests/{req_id}/status/', {'status': 'in_progress'}, format='json'
             )
         self.assertEqual(r.status_code, 200)
 
         # 8. Tugatadi
-        with patch('services.tasks.notify_status_changed.delay'):
+        with patch('orders.tasks.notify_status_changed.delay'):
             r = self.client.patch(
-                f'/api/services/requests/{req_id}/status/', {'status': 'completed'}, format='json'
+                f'/api/orders/requests/{req_id}/status/', {'status': 'completed'}, format='json'
             )
         self.assertEqual(r.status_code, 200)
 
         # 9. Ahror sharh yozadi
         self.client.force_authenticate(user=ahror)
-        r = self.client.post('/api/services/reviews/', {
+        r = self.client.post('/api/orders/reviews/', {
             'service_request': req_id,
             'rating': 5,
             'comment': 'Juda tez va sifatli ish qildi!'
@@ -943,7 +943,7 @@ class FullMonthScenarioTest(APITestCase):
         self.assertEqual(float(botir.provider_profile.rating), 5.0)
 
         # 11. Ahror profili bo'lgan sharhlari ko'radi
-        r = self.client.get('/api/services/reviews/')
+        r = self.client.get('/api/orders/reviews/')
         self.assertEqual(r.status_code, 200)
 
-        print("\n✅ To'liq hayotiy stsenariy muvaffaqiyatli yakunlandi!")
+        print("[OK] To'liq hayotiy stsenariy muvaffaqiyatli yakunlandi!")

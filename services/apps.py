@@ -6,4 +6,4 @@ class ServicesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
-        import services.signals  # noqa
+        pass

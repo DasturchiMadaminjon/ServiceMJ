@@ -5,12 +5,13 @@ from django.shortcuts import get_object_or_404
 from django.db import models as db_models
 
 from accounts.permissions import IsClient, IsProvider
-from .models import Category, Skill, ProviderProfile, PortfolioItem, ServiceRequest, Review
+from .models import Category, Skill, ProviderProfile, PortfolioItem
 from .serializers import (
     CategorySerializer, SkillSerializer, ProviderProfileSerializer,
-    PortfolioItemSerializer, ServiceRequestSerializer,
-    StatusUpdateSerializer, ReviewSerializer,
+    PortfolioItemSerializer
 )
+from orders.models import Review
+from orders.serializers import ReviewSerializer
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -114,140 +115,6 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
         serializer.save(provider=profile)
 
 
-class ServiceRequestViewSet(viewsets.ModelViewSet):
-    serializer_class = ServiceRequestSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['description', 'category__name']
-    ordering_fields = ['created_at', 'budget']
-    ordering = ['-created_at']
-
-    def get_permissions(self):
-        if self.action == 'create':
-            return [permissions.IsAuthenticated(), IsClient()]
-        return [permissions.IsAuthenticated()]
-
-    def get_queryset(self):
-        # Swagger schema generation guard
-        if getattr(self, 'swagger_fake_view', False):
-            return ServiceRequest.objects.none()
-        user = self.request.user
-        
-        # Base query filter
-        if user.is_staff:
-            qs = ServiceRequest.objects.all()
-        elif getattr(user, 'role', None) == 'client':
-            qs = ServiceRequest.objects.filter(customer=user)
-        elif getattr(user, 'role', None) == 'provider':
-            qs = ServiceRequest.objects.filter(
-                db_models.Q(provider=user) | db_models.Q(status='pending')
-            )
-        else:
-            return ServiceRequest.objects.none()
-
-        # Status filter
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-
-        return qs.select_related('customer', 'provider', 'category')
-
-    def perform_create(self, serializer):
-        serializer.save(customer=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.customer != request.user and not request.user.is_staff:
-            return Response(
-                {"detail": "Faqat buyurtma egasi tahrirlashi mumkin."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        if instance.status not in ('pending',):
-            return Response(
-                {"detail": "Faqat 'pending' holatidagi so'rovni tahrirlash mumkin."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        return super().update(request, *args, **kwargs)
-
-    @action(detail=True, methods=['patch'], url_path='status')
-    def update_status(self, request, pk=None):
-        instance = self.get_object()
-        # Eski statusni saqlash (signal uchun)
-        instance._old_status = instance.status
-
-        serializer = StatusUpdateSerializer(
-            data=request.data, context={'instance': instance, 'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        new_status = serializer.validated_data['status']
-
-        user = request.user
-        if new_status == 'accepted':
-            if not hasattr(user, 'role') or user.role != 'provider':
-                return Response(
-                    {"detail": "Faqat usta qabul qila oladi."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            instance.provider = user
-
-        elif new_status in ('in_progress', 'completed'):
-            if instance.provider != user and not user.is_staff:
-                return Response(
-                    {"detail": "Faqat tayinlangan usta holat o'zgartira oladi."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-        elif new_status == 'cancelled':
-            if instance.customer != user and instance.provider != user and not user.is_staff:
-                return Response(
-                    {"detail": "Bekor qilish uchun ruxsat yo'q."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-        instance.status = new_status
-        instance.save()
-        return Response(ServiceRequestSerializer(instance, context={'request': request}).data)
-
-
-class ReviewViewSet(viewsets.ModelViewSet):
-    serializer_class = ReviewSerializer
-    http_method_names = ['get', 'post', 'delete', 'head', 'options']
-
-    def get_authenticators(self):
-        if self.request.method == 'GET':
-            return []
-        return super().get_authenticators()
-
-    def get_permissions(self):
-        if self.action in ('list', 'retrieve'):
-            return [permissions.AllowAny()]
-        if self.action == 'create':
-            return [permissions.IsAuthenticated(), IsClient()]
-        return [permissions.IsAuthenticated()]
-
-    def get_queryset(self):
-        return Review.objects.select_related('reviewer', 'provider', 'service_request').all()
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.reviewer != request.user and not request.user.is_staff:
-            return Response(
-                {"detail": "Faqat sharh egasi o'chira oladi."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().destroy(request, *args, **kwargs)
-
-
-class MyServiceRequestsView(generics.ListAPIView):
-    serializer_class = ServiceRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        status_filter = self.request.query_params.get('status')
-        qs = ServiceRequest.objects.filter(customer=user).select_related('category', 'provider')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        return qs
 
 
 class DashboardStatsView(generics.GenericAPIView):
@@ -262,6 +129,7 @@ class DashboardStatsView(generics.GenericAPIView):
 
     def get(self, request):
         from accounts.models import CustomUser
+        from orders.models import ServiceRequest, Review
         stats = {
             'total_users': CustomUser.objects.count(),
             'total_clients': CustomUser.objects.filter(role='client').count(),

@@ -1,9 +1,23 @@
 from rest_framework import serializers
-from django.conf import settings
-from .models import CustomUser
+from .models import CustomUser, DeviceSession
 
-# 10 MB = 10 * 1024 * 1024 bayt
-MAX_AVATAR_SIZE = 10 * 1024 * 1024
+# 50 MB = 50 * 1024 * 1024 bayt
+# Yuklanishdan keyin server avtomatik siqadi → kichik hajmda saqlanadi
+MAX_AVATAR_SIZE = 50 * 1024 * 1024
+
+
+class DeviceSessionSerializer(serializers.ModelSerializer):
+    """
+    Foydalanuvchi qurilma sessiyasi ma'lumotlari.
+    GET /api/accounts/devices/ uchun ishlatiladi.
+    """
+
+    class Meta:
+        model  = DeviceSession
+        fields = ('id', 'device_name', 'ip_address', 'last_active', 'created_at')
+        read_only_fields = (
+            'id', 'device_name', 'ip_address', 'last_active', 'created_at'
+        )
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -38,7 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
-    password = serializers.CharField(write_only=True, required=False, min_length=8)
+    password   = serializers.CharField(write_only=True, required=False, min_length=8)
 
     class Meta:
         model  = CustomUser
@@ -46,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'role',
             'phone_number', 'is_verified', 'avatar', 'avatar_url', 'password'
         )
-        read_only_fields = ('id', 'username', 'is_verified')
+        read_only_fields = ('id', 'username', 'role', 'is_verified')
         extra_kwargs = {'avatar': {'write_only': True, 'required': False}}
 
     def get_avatar_url(self, obj):
@@ -61,7 +75,8 @@ class UserSerializer(serializers.ModelSerializer):
         if value and value.size > MAX_AVATAR_SIZE:
             mb = value.size / (1024 * 1024)
             raise serializers.ValidationError(
-                f"Rasm hajmi {mb:.1f} MB. Maksimal ruxsat etilgan hajm: 10 MB."
+                f"Rasm hajmi {mb:.1f} MB. Maksimal ruxsat etilgan hajm: 50 MB. "
+                f"Server avtomatik siqadi — yuklashdan tortining."
             )
         return value
 
@@ -74,9 +89,9 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password', None)
         if password:
             instance.set_password(password)
-        
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         instance.save()
         return instance

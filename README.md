@@ -44,6 +44,8 @@ O‘zbekistonda ishonchli ustani topish ko'p hollarda "og‘zaki tavsiya" yoki i
 
 ## 📐 Tizim Arxitekturasi
 
+> **Muhim:** Loyiha kod bazasi va modullar o'rtasidagi bog'liqliklar bo'yicha to'liq ma'lumotni [ARCHITECTURE.md](ARCHITECTURE.md) faylida topishingiz mumkin.
+
 ### 1. High-Level Tizim Xaritasi
 ```mermaid
 graph TD
