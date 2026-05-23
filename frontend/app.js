@@ -327,7 +327,8 @@ async function loadHome() {
 let searchTimer;
 function searchProviders() {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => loadProviders(1, state.providerOrdering), 400);
+  // Qidiruvda categoryId ni saqlaymiz (tozalanadi agar q bor bo'lsa — bu loadProviders ichida)
+  searchTimer = setTimeout(() => loadProviders(1, state.providerOrdering, state.providerCategoryId), 400);
 }
 
 async function loadProviders(page = 1, ordering = '-rating', categoryId = null) {
@@ -337,6 +338,15 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
   
   const searchEl = document.getElementById('prov-search');
   const catStatusEl = document.getElementById('prov-cat-status');
+
+  // Kategoriyalar keshlanmagan bo'lsa, yuklab olamiz (Home sahifasidan kelmagan holat)
+  if (state.providerCategoryId && (!state.allCategories || state.allCategories.length === 0)) {
+    const cr = await api('/services/categories/');
+    if (cr.ok) {
+      const cd = await cr.json();
+      state.allCategories = cd.results || cd;
+    }
+  }
   
   if (state.providerCategoryId) {
     const cat = state.allCategories?.find(c => c.id == state.providerCategoryId);
@@ -363,6 +373,7 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
   if (state.providerCategoryId) url += `&skills__category=${state.providerCategoryId}`;
 
   const list = document.getElementById('providers-list');
+  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Yuklanmoqda...</div>';
   const r = await api(url);
   if (!r.ok) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>Ustalarni yuklab bo'lmadi.<br><button class="btn btn-sm btn-outline" onclick="loadProviders(${page},'${ordering}')">🔄 Qayta urinish</button></div>`;
@@ -374,7 +385,7 @@ async function loadProviders(page = 1, ordering = '-rating', categoryId = null) 
     : `<div class="empty"><div class="empty-icon">😔</div>Hozircha ro'yxatdan o'tgan ustalar yo'q.</div>`;
     
   list.innerHTML = (d.results || []).map(provCard).join('') || emptyMsg;
-  renderPagination('providers-pagination', d, p => loadProviders(p, ordering, categoryId));
+  renderPagination('providers-pagination', d, p => loadProviders(p, ordering, state.providerCategoryId));
 }
 
 function provCard(p) {
@@ -692,11 +703,12 @@ window.verifyOTP = async function() {
 
 async function saveProfile() {
   const phone = document.getElementById('p-phone').value.trim();
+  const newRole = document.getElementById('p-role').value;
   const body = {
     username:     document.getElementById('p-username').value.trim(),
     email:        document.getElementById('p-email').value.trim(),
     phone_number: phone || null,
-    role:         document.getElementById('p-role').value,
+    // role ni bu yerda yubor maymiz — u read_only, alohida endpoint bor
   };
   
   const pass = document.getElementById('p-password').value;
@@ -716,6 +728,23 @@ async function saveProfile() {
   const d = await r.json();
   
   if (!r.ok) { showErr(errEl, Object.values(d).flat().join(', ')); return; }
+  
+  // Agar rol o'zgargan bo'lsa, alohida endpoint orqali o'zgartirish
+  if (newRole && state.user && newRole !== state.user.role) {
+    const roleR = await api('/accounts/change-role/', {
+      method: 'POST',
+      body: JSON.stringify({ role: newRole }),
+    });
+    if (roleR.ok) {
+      const roleD = await roleR.json();
+      d.role = roleD.role; // Qaytgan role ni yangilaymiz
+      toast(`Rol "${newRole === 'provider' ? 'Usta' : 'Mijoz'}" ga o'zgartirildi!`, 'success');
+    } else {
+      const roleErr = await roleR.json();
+      showErr(errEl, roleErr.detail || 'Rolni o\'zgartirda xatolik');
+      return;
+    }
+  }
   
   state.user = d;
   localStorage.setItem('user', JSON.stringify(d));

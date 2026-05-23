@@ -4,9 +4,11 @@ from accounts.serializers import UserSerializer
 
 
 class SkillSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True, default='')
+
     class Meta:
         model = Skill
-        fields = ('id', 'name', 'category')
+        fields = ('id', 'name', 'category', 'category_name')
 
 
 class CategorySerializer(serializers.ModelSerializer):
