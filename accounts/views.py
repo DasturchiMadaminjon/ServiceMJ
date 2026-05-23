@@ -296,6 +296,10 @@ class DeviceListView(generics.ListAPIView):
     serializer_class   = DeviceSessionSerializer
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return DeviceSession.objects.none()
+        if not self.request.user or not self.request.user.is_authenticated:
+            return DeviceSession.objects.none()
         return DeviceSession.objects.filter(user=self.request.user)
 
 
@@ -309,6 +313,10 @@ class DeviceDeleteView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return DeviceSession.objects.none()
+        if not self.request.user or not self.request.user.is_authenticated:
+            return DeviceSession.objects.none()
         return DeviceSession.objects.filter(user=self.request.user)
 
     def perform_destroy(self, instance):
