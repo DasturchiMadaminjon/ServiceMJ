@@ -785,15 +785,63 @@ async function uploadAvatar(input) {
   toast('Avatar yangilandi!', 'success');
 }
 
+function levenshtein(a, b) {
+  const tmp = [];
+  for (let i = 0; i <= a.length; i++) tmp[i] = [i];
+  for (let j = 0; j <= b.length; j++) tmp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      tmp[i][j] = a[i - 1] === b[j - 1]
+        ? tmp[i - 1][j - 1]
+        : Math.min(tmp[i - 1][j] + 1, tmp[i][j - 1] + 1, tmp[i - 1][j - 1] + 1);
+    }
+  }
+  return tmp[a.length][b.length];
+}
+
+function matchQuery(text, query) {
+  text = text.toLowerCase().trim();
+  query = query.toLowerCase().trim();
+  if (!query) return true;
+  if (text.includes(query)) return true;
+
+  const textWords = text.split(/[\s/,\-_()]+/);
+  const queryWords = query.split(/[\s/,\-_()]+/);
+
+  for (const qWord of queryWords) {
+    if (!qWord) continue;
+    let foundMatch = false;
+    for (const tWord of textWords) {
+      if (!tWord) continue;
+      if (tWord.includes(qWord) || qWord.includes(tWord)) {
+        foundMatch = true;
+        break;
+      }
+      if (qWord.length >= 4 && tWord.length >= 4) {
+        const dist = levenshtein(tWord, qWord);
+        const maxAllowedDist = qWord.length <= 5 ? 1 : 2;
+        if (dist <= maxAllowedDist) {
+          foundMatch = true;
+          break;
+        }
+      }
+    }
+    if (foundMatch) return true;
+  }
+  return false;
+}
+
 window.renderAllSkills = function() {
   const container = document.getElementById('skills-container');
-  const q = document.getElementById('skills-search').value.toLowerCase();
+  const q = document.getElementById('skills-search').value.toLowerCase().trim();
   
   const groups = {};
   state.allSkills.forEach(s => {
     const catName = s.category_name || 'Boshqalar';
     if (!groups[catName]) groups[catName] = [];
-    if (!q || s.name.toLowerCase().includes(q)) {
+    
+    // Qidiruv ham skill nomi, ham kategoriya nomini tekshiradi va typo'larni kechiradi!
+    if (!q || matchQuery(s.name, q) || matchQuery(catName, q)) {
       groups[catName].push(s);
     }
   });
