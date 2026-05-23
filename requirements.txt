@@ -11,7 +11,7 @@ django-cors-headers==4.2.0
 dj-database-url==2.1.0
 requests==2.31.0
 Pillow==10.0.0
-pillow-heif==3.6.0
+pillow-heif==0.13.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.7
 redis==4.6.0
