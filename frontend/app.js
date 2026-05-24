@@ -459,7 +459,7 @@ async function showProviderDetail(id) {
     const revHTML = reviews.map(rv => `
       <div class="review-card">
         <div class="review-header">
-          <span class="review-author">@${rv.reviewer_name}</span>
+          <span class="review-author">${rv.reviewer_name}</span>
           <span class="review-stars">${'⭐'.repeat(rv.rating)}</span>
         </div>
         ${rv.comment ? `<div class="review-text">${rv.comment}</div>` : ''}
