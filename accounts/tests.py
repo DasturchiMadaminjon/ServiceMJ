@@ -129,16 +129,30 @@ class OTPTest(APITestCase):
         self.assertIsNotNone(saved, "OTP Redis'ga saqlanmadi!")
         self.assertEqual(len(saved), 6, "OTP 6 xonali bo'lishi kerak!")
 
-    def test_otp_response_has_no_mock_code(self):
+    def test_otp_response_has_no_mock_code_in_production(self):
         """
-        🔐 Xavfsizlik testi: API javobi mock_code ni o'z ichiga OLMASLIGI kerak.
-        Production'da OTP hech qachon API javobida ko'rinmasligi shart.
+        🔐 Xavfsizlik testi: DEBUG=False (production) muhitida API javobi
+        mock_code ni o'z ichiga OLMASLIGI kerak.
+        Test muhitida (DEBUG=True) esa mock_code ruxsat etilgan —
+        bu dasturchilar uchun qulay (SMS integratsiyasiz test qilish).
         """
+        from django.conf import settings as django_settings
         r = self.client.post('/api/accounts/send-otp/')
-        self.assertNotIn('mock_code', r.data, (
-            "XAVFSIZLIK XATOSI: mock_code API javobida bor! "
-            "Bu production'da maxfiy kodni ochiq ko'rsatadi."
-        ))
+        self.assertEqual(r.status_code, 200)
+
+        if django_settings.DEBUG:
+            # DEBUG=True: mock_code bo'lishi MUMKIN — bu to'g'ri xulq
+            # Kod borligini tekshiramiz (6 xonali bo'lishi shart)
+            if 'mock_code' in r.data:
+                self.assertEqual(len(str(r.data['mock_code'])), 6,
+                    "mock_code 6 xonali bo'lishi kerak!")
+        else:
+            # DEBUG=False (production): mock_code HECH QACHON bo'lmasligi kerak
+            self.assertNotIn('mock_code', r.data, (
+                "XAVFSIZLIK XATOSI: mock_code production API javobida bor! "
+                "Bu production'da maxfiy kodni ochiq ko'rsatadi."
+            ))
+
 
     def test_verify_correct_otp_verifies_user(self):
         """To'g'ri OTP bilan foydalanuvchi tasdiqlanishi kerak."""

@@ -371,6 +371,7 @@ class SendOTPView(APIView):
 
     POST /api/accounts/send-otp/
     Response: { "detail": "...", "status": "ok" }
+    DEBUG=True bo'lganda: { ..., "mock_code": "123456" }
     """
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -393,10 +394,19 @@ class SendOTPView(APIView):
         # Hozircha simulatsiya rejimida — kod faqat logda
         logger.debug("[OTP] Mock kod yaratildi | user=%s", user.username)
 
-        return Response({
+        response_data = {
             'detail': 'Tasdiqlash kodi yuborildi.',
             'status': 'ok',
-        })
+        }
+
+        # Faqat DEBUG rejimida mock kodni qaytaramiz (xavfsizlik uchun)
+        from django.conf import settings as django_settings
+        if django_settings.DEBUG:
+            response_data['mock_code'] = otp
+            logger.info("[OTP] DEBUG mock_code returned | user=%s | code=%s", user.username, otp)
+
+        return Response(response_data)
+
 
 
 class VerifyOTPView(APIView):

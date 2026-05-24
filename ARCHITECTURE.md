@@ -16,7 +16,7 @@ Ushbu hujjat loyihaning texnik tuzilishi, modullar orasidagi bog'liqlik va xavfs
 4. **`frontend`**: Statik fayllar (index.html, app.js, style.css).
 
 ## 🔐 Xavfsizlik Tamoyillari
-- **OTP Verification:** Telefon raqamini tasdiqlash Redis orqali 4 xonali kod bilan amalga oshiriladi.
+- **OTP Verification:** Telefon raqamini tasdiqlash Redis orqali 6 xonali kod bilan amalga oshiriladi.
 - **No-Cache Policy:** API so'rovlari Nginx darajasida keshlanishi taqiqlangan.
 - **Auth:** JWT (SimpleJWT) orqali autentifikatsiya.
 

@@ -36,6 +36,10 @@ async function refreshToken() {
     const d = await r.json();
     state.access = d.access;
     localStorage.setItem('access', d.access);
+    if (d.refresh) {
+      state.refresh = d.refresh;
+      localStorage.setItem('refresh', d.refresh);
+    }
     return true;
   } catch { return false; }
 }
@@ -235,7 +239,20 @@ async function loadCurrentUser() {
   localStorage.setItem('user', JSON.stringify(u));
 }
 
-function logout() {
+async function logout() {
+  // Backend'ga logout so'rovi yuboramiz (refresh tokenni blacklist qilish)
+  if (state.refresh) {
+    try {
+      await api('/accounts/logout/', {
+        method: 'POST',
+        body: JSON.stringify({ refresh: state.refresh }),
+      });
+    } catch (e) {
+      // Logout API muvaffaqiyatsiz bo'lsa ham, localdan chiqamiz
+      console.warn('[LOGOUT] API chaqiruvda xato:', e);
+    }
+  }
+
   localStorage.removeItem('access');
   localStorage.removeItem('refresh');
   
@@ -488,7 +505,7 @@ function filterMyRequests(s) {
 }
 
 async function loadMyRequests(page = 1) {
-  const url = `/services/my-requests/?page=${page}${state.currentStatus ? '&status='+state.currentStatus : ''}`;
+  const url = `/orders/my-requests/?page=${page}${state.currentStatus ? '&status='+state.currentStatus : ''}`;
   const r = await api(url);
   if (!r.ok) return;
   const d = await r.json();
@@ -526,7 +543,7 @@ function filterProviderRequests(s) {
 }
 
 async function loadAvailableRequests(statusFilter = 'pending', page = 1) {
-  const r = await api(`/services/requests/?status=${statusFilter}&page=${page}`);
+  const r = await api(`/orders/requests/?status=${statusFilter}&page=${page}`);
   if (!r.ok) return;
   const d = await r.json();
   document.getElementById('available-requests-list').innerHTML =
@@ -559,7 +576,7 @@ function providerReqCard(req, tab) {
 
 // ─── STATUS O'ZGARTIRISH ────────────────────────────
 async function changeStatus(reqId, newStatus) {
-  const r = await api(`/services/requests/${reqId}/status/`, {
+  const r = await api(`/orders/requests/${reqId}/status/`, {
     method: 'PATCH',
     body: JSON.stringify({ status: newStatus }),
   });
@@ -607,7 +624,7 @@ async function createRequest() {
     provider:    state.hireProviderId || null,
   };
   if (!body.description) { showErr(errEl, 'Tavsif kiritish shart'); return; }
-  const r = await api('/services/requests/', { method: 'POST', body: JSON.stringify(body) });
+  const r = await api('/orders/requests/', { method: 'POST', body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) { showErr(errEl, Object.values(d).flat().join(' ')); return; }
   toast('Buyurtma yuborildi!', 'success');
@@ -648,7 +665,7 @@ async function loadProfile() {
 
 window.sendOTP = async function() {
   console.log("sendOTP function triggered");
-  const r = await api('/accounts/send-otp/', { method: 'POST' });
+  const r = await api('/accounts/send-otp/', { method: 'POST', body: JSON.stringify({}) });
   const d = await r.json();
   if (r.ok) {
     console.log("OTP sent successfully", d);
@@ -658,10 +675,11 @@ window.sendOTP = async function() {
       mockEl.textContent = `📲 Simulyatsiya: SMS kod - ${d.mock_code}`;
       mockEl.style.display = 'block';
       toast('Tasdiqlash kodi yuborildi!', 'success');
-      // Fallback: Agar modalda ko'rinmasa, alert bilan chiqarish
       alert(`DIQQAT: Tasdiqlash kodi - ${d.mock_code}`);
     } else {
-      mockEl.style.display = 'none';
+      // Backend kodni logda saqlaydi — foydalanuvchiga xabar beramiz
+      mockEl.textContent = '📲 Tasdiqlash kodi serverda yaratildi. app.log faylini tekshiring.';
+      mockEl.style.display = 'block';
       toast('Tasdiqlash kodi yuborildi!', 'success');
     }
     document.getElementById('otp-code').value = '';
@@ -679,8 +697,8 @@ window.verifyOTP = async function() {
   const errEl = document.getElementById('otp-err');
   errEl.classList.add('hidden');
   
-  if (code.length !== 4) {
-    showErr(errEl, '4 xonali kodni kiriting');
+  if (code.length !== 6) {
+    showErr(errEl, '6 xonali kodni kiriting');
     return;
   }
   
@@ -1133,7 +1151,7 @@ async function loadAdminStats() {
     ${byStatus}`;
 
   // Admin barcha so'rovlarni ko'radi
-  const reqR = await api('/services/requests/?page=1');
+  const reqR = await api('/orders/requests/?page=1');
   if (reqR.ok) {
     const rd = await reqR.json();
     document.getElementById('admin-requests-list').innerHTML =
@@ -1147,7 +1165,7 @@ async function loadAdminStats() {
           <span class="status status-${req.status}">${statusLabel(req.status)}</span>
         </div>`).join('');
     renderPagination('admin-requests-pagination', rd, p => {
-      api(`/services/requests/?page=${p}`).then(r => r.json()).then(d2 => {
+      api(`/orders/requests/?page=${p}`).then(r => r.json()).then(d2 => {
         document.getElementById('admin-requests-list').innerHTML =
           (d2.results || []).map(req => `
             <div class="card">
@@ -1193,7 +1211,7 @@ async function submitReview() {
     rating,
     comment: document.getElementById('review-comment').value.trim(),
   };
-  const r = await api('/services/reviews/', { method: 'POST', body: JSON.stringify(body) });
+  const r = await api('/orders/reviews/', { method: 'POST', body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) { showErr(errEl, Object.values(d).flat().join(' ')); return; }
   toast('Sharh yuborildi! Rahmat ⭐', 'success');
