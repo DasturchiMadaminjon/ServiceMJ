@@ -17,7 +17,7 @@ if not API_KEY or not BASE_URL:
     exit(1)
 
 # Oxirgi yuborilgan SMS statuslarini olish
-url = f"https://{BASE_URL}/sms/2/reports?limit=5"
+url = f"https://{BASE_URL}/sms/1/reports?limit=5"
 headers = {
     "Authorization": f"App {API_KEY}",
     "Accept": "application/json"
