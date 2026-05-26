@@ -367,7 +367,8 @@ class SendOTPView(APIView):
     Telefon raqamni tasdiqlash uchun 6 xonali OTP kodi yuborish.
     Kod Redis da 5 daqiqa saqlanadi.
 
-    TODO: Eskiz yoki Twilio SMS integratsiyasi (hozir simulatsiya rejimi).
+    Haqiqiy SMS Infobip API orqali yuboriladi (agar sozlashlar bo'lsa),
+    sozlashlar bo'lmasa simulator rejimida logga yoziladi.
 
     POST /api/accounts/send-otp/
     Response: { "detail": "...", "status": "ok" }
@@ -384,15 +385,60 @@ class SendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 6 xonali tasodifiy kod (4 xonali eski koddan xavfsizroq)
+        # 6 xonali tasodifiy kod
         otp = str(random.randint(100000, 999999))
 
         # Redisga 5 daqiqaga saqlash
         cache.set(f"otp_{user.id}", otp, timeout=300)
 
-        # TODO: Haqiqiy SMS yuborish (Eskiz/Twilio integratsiyasi)
-        # Hozircha simulatsiya rejimida — kod faqat logda
-        logger.debug("[OTP] Mock kod yaratildi | user=%s", user.username)
+        # Infobip SMS orqali haqiqiy OTP yuborish
+        from django.conf import settings as django_settings
+        import requests
+        
+        api_key = getattr(django_settings, 'INFOBIP_API_KEY', '')
+        base_url = getattr(django_settings, 'INFOBIP_BASE_URL', '')
+        phone = user.phone_number
+        
+        sms_sent = False
+        
+        if api_key and base_url and phone:
+            # Telefon raqamini xalqaro formatga keltiramiz (+998...)
+            clean_phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+            if not clean_phone.startswith("+") and not clean_phone.startswith("00"):
+                clean_phone = "+" + clean_phone
+                
+            url = f"https://{base_url}/sms/2/text/advanced"
+            headers = {
+                "Authorization": f"App {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+            body = {
+                "messages": [
+                    {
+                        "destinations": [
+                            {
+                                "to": clean_phone
+                            }
+                        ],
+                        "from": "ServiceMJ",
+                        "text": f"ServiceMJ: Sizning tasdiqlash kodingiz: {otp}"
+                    }
+                ]
+            }
+            
+            try:
+                r = requests.post(url, json=body, headers=headers, timeout=5)
+                if r.status_code in [200, 201, 202]:
+                    logger.info("[OTP] SMS muvaffaqiyatli yuborildi | user=%s | phone=%s", user.username, clean_phone)
+                    sms_sent = True
+                else:
+                    logger.error("[OTP] SMS yuborishda xatolik | status=%d | response=%s", r.status_code, r.text)
+            except Exception as e:
+                logger.error("[OTP] SMS yuborishda tarmoq xatosi | error=%s", str(e))
+                
+        if not sms_sent:
+            logger.warning("[OTP] SMS yuborilmadi, simulatsiya rejimidan foydalaniladi (kod faqat logda) | user=%s", user.username)
 
         response_data = {
             'detail': 'Tasdiqlash kodi yuborildi.',
@@ -400,7 +446,6 @@ class SendOTPView(APIView):
         }
 
         # Faqat DEBUG rejimida mock kodni qaytaramiz (xavfsizlik uchun)
-        from django.conf import settings as django_settings
         if django_settings.DEBUG:
             response_data['mock_code'] = otp
             logger.info("[OTP] DEBUG mock_code returned | user=%s | code=%s", user.username, otp)
