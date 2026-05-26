@@ -407,6 +407,7 @@ class SendOTPView(APIView):
             if not clean_phone.startswith("+") and not clean_phone.startswith("00"):
                 clean_phone = "+" + clean_phone
                 
+            sender = getattr(django_settings, 'INFOBIP_SENDER', 'InfoSMS')
             url = f"https://{base_url}/sms/2/text/advanced"
             headers = {
                 "Authorization": f"App {api_key}",
@@ -421,8 +422,8 @@ class SendOTPView(APIView):
                                 "to": clean_phone
                             }
                         ],
-                        "from": "ServiceMJ",
-                        "text": f"ServiceMJ: Sizning tasdiqlash kodingiz: {otp}"
+                        "from": sender,
+                        "text": f"Sizning tasdiqlash kodingiz: {otp}"
                     }
                 ]
             }

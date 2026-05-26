@@ -200,6 +200,7 @@ TELEGRAM_ADMIN_CHAT_IDS = [
 # Infobip SMS
 INFOBIP_API_KEY = os.getenv('INFOBIP_API_KEY', '')
 INFOBIP_BASE_URL = os.getenv('INFOBIP_BASE_URL', '')
+INFOBIP_SENDER = os.getenv('INFOBIP_SENDER', 'InfoSMS')
 
 LANGUAGE_CODE = "uz"
 TIME_ZONE = "Asia/Tashkent"
