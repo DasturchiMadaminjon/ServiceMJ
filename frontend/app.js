@@ -1252,6 +1252,17 @@ function toggleMenu() {
   document.getElementById('nav-links').classList.toggle('open');
 }
 
+window.togglePasswordVisibility = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
 // ─── ISHGA TUSHIRISH ─────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   if (state.access && state.user) initApp();

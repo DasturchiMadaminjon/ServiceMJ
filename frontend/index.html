@@ -67,7 +67,13 @@
     <!-- Login -->
     <div id="form-login">
       <div class="field"><label>Foydalanuvchi nomi yoki telefon</label><input id="l-username" type="text" placeholder="username yoki +998..."></div>
-      <div class="field"><label>Parol</label><input id="l-password" type="password" placeholder="••••••••"></div>
+      <div class="field">
+        <label>Parol</label>
+        <div class="password-wrapper">
+          <input id="l-password" type="password" placeholder="••••••••">
+          <button type="button" class="toggle-password" onclick="togglePasswordVisibility('l-password', this)">👁️</button>
+        </div>
+      </div>
       <div id="l-err" class="err hidden"></div>
       <button class="btn btn-primary btn-full" onclick="doLogin()">Kirish</button>
     </div>
@@ -83,7 +89,13 @@
           <option value="provider">Usta — xizmat beraman</option>
         </select>
       </div>
-      <div class="field"><label>Parol</label><input id="r-password" type="password" placeholder="kamida 8 ta belgi"></div>
+      <div class="field">
+        <label>Parol</label>
+        <div class="password-wrapper">
+          <input id="r-password" type="password" placeholder="kamida 8 ta belgi">
+          <button type="button" class="toggle-password" onclick="togglePasswordVisibility('r-password', this)">👁️</button>
+        </div>
+      </div>
       <div id="r-err" class="err hidden"></div>
       <button class="btn btn-primary btn-full" onclick="doRegister()">Ro'yxatdan o'tish</button>
     </div>
@@ -221,7 +233,13 @@
     </div>
     <div class="field"><label>Email</label><input id="p-email" type="email"></div>
     <div class="field"><label>Telefon</label><input id="p-phone" type="text"></div>
-    <div class="field"><label>Yangi parol (o'zgartirish ixtiyoriy)</label><input id="p-password" type="password" placeholder="••••••••"></div>
+    <div class="field">
+      <label>Yangi parol (o'zgartirish ixtiyoriy)</label>
+      <div class="password-wrapper">
+        <input id="p-password" type="password" placeholder="••••••••">
+        <button type="button" class="toggle-password" onclick="togglePasswordVisibility('p-password', this)">👁️</button>
+      </div>
+    </div>
     <div id="p-err" class="err hidden"></div>
     <div id="p-ok" class="ok hidden"></div>
     <button class="btn btn-primary" onclick="saveProfile()">Ma'lumotlarni saqlash</button>
