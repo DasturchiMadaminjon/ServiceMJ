@@ -22,15 +22,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only-change-in-production')
 DEBUG = os.getenv('DEBUG', '0') == '1'
+TESTING = 'test' in sys.argv
 
 # Security settings for Production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG and not TESTING
+SESSION_COOKIE_SECURE = not DEBUG and not TESTING
+CSRF_COOKIE_SECURE = not DEBUG and not TESTING
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG and not TESTING else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG and not TESTING
+SECURE_HSTS_PRELOAD = not DEBUG and not TESTING
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
@@ -98,8 +99,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 import dj_database_url
-
-TESTING = 'test' in sys.argv
 
 if TESTING:
     DATABASES = {
