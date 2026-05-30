@@ -669,18 +669,40 @@ window.sendOTP = async function() {
   const d = await r.json();
   if (r.ok) {
     console.log("OTP sent successfully", d);
-    // Simulyatsiya uchun kodni ekranda ko'rsatish
     const mockEl = document.getElementById('otp-mock-display');
-    if (d.mock_code) {
-      mockEl.textContent = `📲 Simulyatsiya: SMS kod - ${d.mock_code}`;
+    
+    if (d.delivery_method === 'sms' && d.sms_sent) {
+      // SMS muvaffaqiyatli yuborildi
+      mockEl.innerHTML = '✅ <strong>Tasdiqlash kodi telefoningizga SMS orqali yuborildi.</strong><br>Iltimos, SMS ni tekshiring.';
       mockEl.style.display = 'block';
-      toast('Tasdiqlash kodi yuborildi!', 'success');
-      alert(`DIQQAT: Tasdiqlash kodi - ${d.mock_code}`);
+      mockEl.style.background = '#d1fae5';
+      mockEl.style.color = '#065f46';
+      toast('SMS telefoningizga yuborildi!', 'success');
+    } else if (d.delivery_method === 'telegram') {
+      // Telegram orqali yuborildi
+      mockEl.innerHTML = '📲 <strong>Tasdiqlash kodi admin orqali yuborildi.</strong><br>Admin sizga kodni yetkazadi.';
+      mockEl.style.display = 'block';
+      mockEl.style.background = '#dbeafe';
+      mockEl.style.color = '#1e40af';
+      toast('Kod admin orqali yuborildi', 'success');
+      if (d.otp_code) {
+        mockEl.innerHTML += `<br><br>🔑 <strong style="font-size:1.3rem;letter-spacing:0.3rem">${d.otp_code}</strong>`;
+      }
     } else {
-      // Backend kodni logda saqlaydi — foydalanuvchiga xabar beramiz
-      mockEl.textContent = '📲 Tasdiqlash kodi serverda yaratildi. app.log faylini tekshiring.';
-      mockEl.style.display = 'block';
-      toast('Tasdiqlash kodi yuborildi!', 'success');
+      // Fallback — kod ekranda ko'rsatiladi
+      if (d.otp_code) {
+        mockEl.innerHTML = `📲 <strong>Tasdiqlash kodingiz:</strong><br><span style="font-size:1.5rem;letter-spacing:0.5rem;font-weight:bold">${d.otp_code}</span>`;
+        mockEl.style.display = 'block';
+        mockEl.style.background = '#fef3c7';
+        mockEl.style.color = '#92400e';
+        toast('Tasdiqlash kodi tayyor!', 'success');
+      } else {
+        mockEl.innerHTML = '📲 Tasdiqlash kodi yuborildi.';
+        mockEl.style.display = 'block';
+        mockEl.style.background = '#f3f4f6';
+        mockEl.style.color = 'var(--primary)';
+        toast('Tasdiqlash kodi yuborildi!', 'success');
+      }
     }
     document.getElementById('otp-code').value = '';
     document.getElementById('otp-err').classList.add('hidden');

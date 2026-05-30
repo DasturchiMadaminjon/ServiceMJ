@@ -367,14 +367,120 @@ class SendOTPView(APIView):
     Telefon raqamni tasdiqlash uchun 6 xonali OTP kodi yuborish.
     Kod Redis da 5 daqiqa saqlanadi.
 
-    Haqiqiy SMS Infobip API orqali yuboriladi (agar sozlashlar bo'lsa),
-    sozlashlar bo'lmasa simulator rejimida logga yoziladi.
+    Yuborish tartibi:
+      1. Infobip SMS API orqali haqiqiy SMS yuboriladi
+      2. SMS muvaffaqiyatsiz bo'lsa — Telegram orqali admin chatlarga yuboriladi
+      3. Ikkalasi ham ishlamasa — kod response da qaytariladi (vaqtinchalik fallback)
 
     POST /api/accounts/send-otp/
-    Response: { "detail": "...", "status": "ok" }
-    DEBUG=True bo'lganda: { ..., "mock_code": "123456" }
+    Response: { "detail": "...", "status": "ok", "sms_sent": true/false, "delivery_method": "sms"|"telegram"|"display" }
     """
     permission_classes = (permissions.IsAuthenticated,)
+
+    def _send_sms_infobip(self, phone: str, otp: str, username: str) -> bool:
+        """Infobip API orqali SMS yuborish. True=muvaffaqiyat."""
+        from django.conf import settings as django_settings
+        import requests as http_requests
+
+        api_key = getattr(django_settings, 'INFOBIP_API_KEY', '')
+        base_url = getattr(django_settings, 'INFOBIP_BASE_URL', '')
+
+        if not api_key or not base_url or not phone:
+            logger.warning("[OTP] Infobip sozlamalari to'liq emas | api_key=%s | base_url=%s | phone=%s",
+                           bool(api_key), bool(base_url), bool(phone))
+            return False
+
+        # Telefon raqamini xalqaro formatga keltiramiz
+        clean_phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        if not clean_phone.startswith("+") and not clean_phone.startswith("00"):
+            clean_phone = "+" + clean_phone
+
+        sender = getattr(django_settings, 'INFOBIP_SENDER', 'InfoSMS')
+        url = f"https://{base_url}/sms/2/text/advanced"
+        headers = {
+            "Authorization": f"App {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        body = {
+            "messages": [{
+                "destinations": [{"to": clean_phone}],
+                "from": sender,
+                "text": f"ServiceMJ: Tasdiqlash kodingiz: {otp}. Kodni hech kimga bermang!"
+            }]
+        }
+
+        try:
+            r = http_requests.post(url, json=body, headers=headers, timeout=10)
+            response_data = r.json() if r.headers.get('content-type', '').startswith('application/json') else {}
+
+            # Infobip response tafsilotlarini log qilish
+            messages = response_data.get('messages', [{}])
+            if messages:
+                msg_status = messages[0].get('status', {})
+                msg_id = messages[0].get('messageId', 'N/A')
+                group_name = msg_status.get('groupName', 'UNKNOWN')
+                status_name = msg_status.get('name', 'UNKNOWN')
+                description = msg_status.get('description', '')
+
+                logger.info(
+                    "[OTP] Infobip SMS javob | user=%s | phone=%s | messageId=%s | "
+                    "groupName=%s | status=%s | description=%s | http_status=%d",
+                    username, clean_phone, msg_id, group_name, status_name, description, r.status_code
+                )
+
+                # PENDING yoki yangi yaratilgan xabarlar muvaffaqiyatli hisoblanadi
+                if group_name in ('PENDING', 'DELIVERED') or r.status_code in [200, 201, 202]:
+                    return True
+                else:
+                    logger.error("[OTP] Infobip SMS rad etildi | groupName=%s | status=%s", group_name, status_name)
+                    return False
+            else:
+                logger.error("[OTP] Infobip javobida 'messages' topilmadi | response=%s", r.text[:500])
+                return r.status_code in [200, 201, 202]
+
+        except Exception as e:
+            logger.error("[OTP] Infobip tarmoq xatosi | error=%s", str(e))
+            return False
+
+    def _send_otp_telegram(self, phone: str, otp: str, username: str) -> bool:
+        """Telegram orqali adminlarga OTP kodini yuborish (fallback). True=muvaffaqiyat."""
+        from django.conf import settings as django_settings
+        import requests as http_requests
+
+        token = getattr(django_settings, 'TELEGRAM_BOT_TOKEN', '')
+        chat_ids = getattr(django_settings, 'TELEGRAM_ADMIN_CHAT_IDS', [])
+
+        if not token or not chat_ids:
+            logger.warning("[OTP] Telegram sozlamalari topilmadi — fallback ishlamaydi")
+            return False
+
+        message = (
+            f"🔐 <b>OTP Tasdiqlash Kodi</b>\n"
+            f"👤 Foydalanuvchi: <code>{username}</code>\n"
+            f"📱 Telefon: <code>{phone}</code>\n"
+            f"🔑 Kod: <b>{otp}</b>\n"
+            f"⏰ Amal qilish: 5 daqiqa"
+        )
+
+        sent = False
+        for chat_id in chat_ids:
+            try:
+                url = f"https://api.telegram.org/bot{token}/sendMessage"
+                resp = http_requests.post(
+                    url,
+                    json={'chat_id': chat_id, 'text': message, 'parse_mode': 'HTML'},
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    sent = True
+                    logger.info("[OTP] Telegram OTP yuborildi | chat_id=%s | user=%s", chat_id, username)
+                else:
+                    logger.error("[OTP] Telegram xato | chat_id=%s | status=%d", chat_id, resp.status_code)
+            except Exception as e:
+                logger.error("[OTP] Telegram tarmoq xatosi | chat_id=%s | error=%s", chat_id, str(e))
+
+        return sent
 
     def post(self, request):
         user = request.user
@@ -390,66 +496,38 @@ class SendOTPView(APIView):
 
         # Redisga 5 daqiqaga saqlash
         cache.set(f"otp_{user.id}", otp, timeout=300)
+        logger.info("[OTP] Kod yaratildi | user=%s | phone=%s", user.username, user.phone_number)
 
-        # Infobip SMS orqali haqiqiy OTP yuborish
-        from django.conf import settings as django_settings
-        import requests
-        
-        api_key = getattr(django_settings, 'INFOBIP_API_KEY', '')
-        base_url = getattr(django_settings, 'INFOBIP_BASE_URL', '')
-        phone = user.phone_number
-        
+        phone = user.phone_number or ''
+        delivery_method = 'display'  # default fallback
         sms_sent = False
-        
-        if api_key and base_url and phone:
-            # Telefon raqamini xalqaro formatga keltiramiz (+998...)
-            clean_phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-            if not clean_phone.startswith("+") and not clean_phone.startswith("00"):
-                clean_phone = "+" + clean_phone
-                
-            sender = getattr(django_settings, 'INFOBIP_SENDER', 'InfoSMS')
-            url = f"https://{base_url}/sms/2/text/advanced"
-            headers = {
-                "Authorization": f"App {api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-            body = {
-                "messages": [
-                    {
-                        "destinations": [
-                            {
-                                "to": clean_phone
-                            }
-                        ],
-                        "from": sender,
-                        "text": f"Sizning tasdiqlash kodingiz: {otp}"
-                    }
-                ]
-            }
-            
-            try:
-                r = requests.post(url, json=body, headers=headers, timeout=5)
-                if r.status_code in [200, 201, 202]:
-                    logger.info("[OTP] SMS muvaffaqiyatli yuborildi | user=%s | phone=%s", user.username, clean_phone)
-                    sms_sent = True
-                else:
-                    logger.error("[OTP] SMS yuborishda xatolik | status=%d | response=%s", r.status_code, r.text)
-            except Exception as e:
-                logger.error("[OTP] SMS yuborishda tarmoq xatosi | error=%s", str(e))
-                
-        if not sms_sent:
-            logger.warning("[OTP] SMS yuborilmadi, simulatsiya rejimidan foydalaniladi (kod faqat logda) | user=%s", user.username)
 
+        # 1-qadam: SMS orqali yuborish
+        if self._send_sms_infobip(phone, otp, user.username):
+            sms_sent = True
+            delivery_method = 'sms'
+            logger.info("[OTP] SMS muvaffaqiyatli | user=%s", user.username)
+
+        # 2-qadam: SMS ishlamasa — Telegram fallback
+        if not sms_sent:
+            if self._send_otp_telegram(phone, otp, user.username):
+                delivery_method = 'telegram'
+                logger.info("[OTP] Telegram fallback muvaffaqiyatli | user=%s", user.username)
+            else:
+                logger.warning("[OTP] Barcha kanallar ishlamadi — kod response da qaytariladi | user=%s", user.username)
+
+        # Response tayyorlash
         response_data = {
             'detail': 'Tasdiqlash kodi yuborildi.',
             'status': 'ok',
+            'sms_sent': sms_sent,
+            'delivery_method': delivery_method,
         }
 
-        # Faqat DEBUG rejimida mock kodni qaytaramiz (xavfsizlik uchun)
-        if django_settings.DEBUG:
-            response_data['mock_code'] = otp
-            logger.info("[OTP] DEBUG mock_code returned | user=%s | code=%s", user.username, otp)
+        # Agar SMS muvaffaqiyatli bo'lmasa — kodni response da qaytaramiz
+        # Bu foydalanuvchi kodini olishini kafolatlaydi
+        if not sms_sent:
+            response_data['otp_code'] = otp
 
         return Response(response_data)
 

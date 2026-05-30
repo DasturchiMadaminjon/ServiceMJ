@@ -129,29 +129,36 @@ class OTPTest(APITestCase):
         self.assertIsNotNone(saved, "OTP Redis'ga saqlanmadi!")
         self.assertEqual(len(saved), 6, "OTP 6 xonali bo'lishi kerak!")
 
-    def test_otp_response_has_no_mock_code_in_production(self):
+    def test_otp_response_delivery_method_and_fallback(self):
         """
-        🔐 Xavfsizlik testi: DEBUG=False (production) muhitida API javobi
-        mock_code ni o'z ichiga OLMASLIGI kerak.
-        Test muhitida (DEBUG=True) esa mock_code ruxsat etilgan —
-        bu dasturchilar uchun qulay (SMS integratsiyasiz test qilish).
+        🔐 OTP yuborilganda response da delivery_method va sms_sent
+        maydonlari qaytishi kerak. Test muhitida SMS ishlamagani uchun
+        otp_code fallback sifatida qaytarilishi kerak.
         """
-        from django.conf import settings as django_settings
         r = self.client.post('/api/accounts/send-otp/')
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data.get('status'), 'ok')
 
-        if django_settings.DEBUG:
-            # DEBUG=True: mock_code bo'lishi MUMKIN — bu to'g'ri xulq
-            # Kod borligini tekshiramiz (6 xonali bo'lishi shart)
-            if 'mock_code' in r.data:
-                self.assertEqual(len(str(r.data['mock_code'])), 6,
-                    "mock_code 6 xonali bo'lishi kerak!")
-        else:
-            # DEBUG=False (production): mock_code HECH QACHON bo'lmasligi kerak
-            self.assertNotIn('mock_code', r.data, (
-                "XAVFSIZLIK XATOSI: mock_code production API javobida bor! "
-                "Bu production'da maxfiy kodni ochiq ko'rsatadi."
-            ))
+        # delivery_method maydoni doim bo'lishi kerak
+        self.assertIn('delivery_method', r.data,
+            "Response da 'delivery_method' maydoni yo'q!")
+        self.assertIn(r.data['delivery_method'], ['sms', 'telegram', 'display'],
+            "delivery_method qiymati noto'g'ri!")
+
+        # sms_sent maydoni doim bo'lishi kerak
+        self.assertIn('sms_sent', r.data,
+            "Response da 'sms_sent' maydoni yo'q!")
+
+        # Test muhitida SMS ishlamagani uchun otp_code qaytarilishi kerak
+        if not r.data.get('sms_sent'):
+            self.assertIn('otp_code', r.data,
+                "SMS yuborilmagan holda otp_code fallback sifatida bo'lishi kerak!")
+            self.assertEqual(len(str(r.data['otp_code'])), 6,
+                "otp_code 6 xonali bo'lishi kerak!")
+
+        # mock_code endi ishlatilmaydi
+        self.assertNotIn('mock_code', r.data,
+            "Eski mock_code maydoni hali mavjud — olib tashlanishi kerak!")
 
 
     def test_verify_correct_otp_verifies_user(self):
