@@ -36,7 +36,12 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,tadbikor.uz,www.tadbikor.uz,18.194.40.42').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Sentry DisallowedHost xatolarini butunlay bartaraf etish uchun asosiy domenlar va IP'ni doim qo'shib qo'yamiz
+for host in ['tadbikor.uz', 'www.tadbikor.uz', 'servicehub.uz', 'www.servicehub.uz', '18.194.40.42']:
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+
 
 CSRF_TRUSTED_ORIGINS = [
     'https://tadbikor.uz',
