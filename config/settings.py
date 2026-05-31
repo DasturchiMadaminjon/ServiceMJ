@@ -201,6 +201,14 @@ INFOBIP_API_KEY = os.getenv('INFOBIP_API_KEY', '')
 INFOBIP_BASE_URL = os.getenv('INFOBIP_BASE_URL', '')
 INFOBIP_SENDER = os.getenv('INFOBIP_SENDER', 'InfoSMS')
 
+# SMS Provayder Sozlamalari ('none' | 'infobip' | 'eskiz')
+SMS_PROVIDER = os.getenv('SMS_PROVIDER', 'none')
+
+# Eskiz SMS
+ESKIZ_EMAIL = os.getenv('ESKIZ_EMAIL', '')
+ESKIZ_PASSWORD = os.getenv('ESKIZ_PASSWORD', '')
+
+
 LANGUAGE_CODE = "uz"
 TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True

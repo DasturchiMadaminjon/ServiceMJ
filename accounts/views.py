@@ -443,6 +443,82 @@ class SendOTPView(APIView):
             logger.error("[OTP] Infobip tarmoq xatosi | error=%s", str(e))
             return False
 
+    def _send_sms_eskiz(self, phone: str, otp: str, username: str) -> bool:
+        """Eskiz.uz API orqali SMS yuborish. True=muvaffaqiyat."""
+        from django.conf import settings as django_settings
+        from django.core.cache import cache
+        import requests as http_requests
+
+        email = getattr(django_settings, 'ESKIZ_EMAIL', '')
+        password = getattr(django_settings, 'ESKIZ_PASSWORD', '')
+
+        if not email or not password or not phone:
+            logger.warning("[OTP] Eskiz.uz sozlamalari to'liq emas | email=%s | password=%s | phone=%s",
+                           bool(email), bool(password), bool(phone))
+            return False
+
+        # Telefon raqamini faqat raqamlardan iborat 12 xonali ko'rinishga keltiramiz (998901234567)
+        clean_phone = phone.strip().replace("+", "").replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        if not clean_phone.startswith("998"):
+            # O'zbekiston raqami bo'lmasa, Eskiz faqat O'zbekistonga yuboradi
+            logger.warning("[OTP] Eskiz faqat O'zbekiston raqamlarini qo'llab-quvvatlaydi | phone=%s", clean_phone)
+            return False
+
+        # 1. Eskiz.uz Tokenini olish/keshdan o'qish
+        token = cache.get('eskiz_token')
+        if not token:
+            login_url = "https://notify.eskiz.uz/api/auth/login"
+            try:
+                r = http_requests.post(login_url, data={'email': email, 'password': password}, timeout=10)
+                if r.status_code == 200:
+                    res = r.json()
+                    token = res.get('data', {}).get('token')
+                    if token:
+                        # 20 kunga keshlaymiz (Eskiz tokenlari 30 kun amal qiladi)
+                        cache.set('eskiz_token', token, timeout=86400 * 20)
+                        logger.info("[OTP] Eskiz.uz yangi token olindi.")
+                    else:
+                        logger.error("[OTP] Eskiz.uz token topilmadi | response=%s", r.text[:500])
+                        return False
+                else:
+                    logger.error("[OTP] Eskiz.uz login xatolik | status=%d | response=%s", r.status_code, r.text[:500])
+                    return False
+            except Exception as e:
+                logger.error("[OTP] Eskiz.uz login tarmoq xatosi | error=%s", str(e))
+                return False
+
+        # 2. SMS yuborish
+        send_url = "https://notify.eskiz.uz/api/message/sms/send"
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        body = {
+            "mobile_phone": clean_phone,
+            "message": f"ServiceMJ: Tasdiqlash kodingiz: {otp}. Kodni hech kimga bermang!",
+            "from": "4546"  # Eskiz default sender ID
+        }
+
+        try:
+            r = http_requests.post(send_url, data=body, headers=headers, timeout=10)
+            if r.status_code == 200:
+                res = r.json()
+                status = res.get('status')
+                logger.info(
+                    "[OTP] Eskiz.uz SMS javob | user=%s | phone=%s | status=%s | response=%s",
+                    username, clean_phone, status, r.text[:500]
+                )
+                if status in ('waiting', 'sent', 'delivered'):
+                    return True
+                else:
+                    logger.error("[OTP] Eskiz.uz SMS yuborish rad etildi | status=%s", status)
+                    return False
+            else:
+                logger.error("[OTP] Eskiz.uz SMS yuborishda xatolik | status=%d | response=%s", r.status_code, r.text[:500])
+                return False
+        except Exception as e:
+            logger.error("[OTP] Eskiz.uz SMS tarmoq xatosi | error=%s", str(e))
+            return False
+
     def _send_otp_telegram(self, phone: str, otp: str, username: str) -> bool:
         """Telegram orqali adminlarga OTP kodini yuborish (fallback). True=muvaffaqiyat."""
         from django.conf import settings as django_settings
@@ -484,6 +560,7 @@ class SendOTPView(APIView):
 
     def post(self, request):
         user = request.user
+        from django.conf import settings as django_settings
 
         if user.is_verified:
             return Response(
@@ -502,11 +579,24 @@ class SendOTPView(APIView):
         delivery_method = 'display'  # default fallback
         sms_sent = False
 
-        # 1-qadam: SMS orqali yuborish
-        if self._send_sms_infobip(phone, otp, user.username):
-            sms_sent = True
-            delivery_method = 'sms'
-            logger.info("[OTP] SMS muvaffaqiyatli | user=%s", user.username)
+        sms_provider = getattr(django_settings, 'SMS_PROVIDER', 'none').lower()
+        logger.info("[OTP] SMS_PROVIDER faol: %s", sms_provider)
+
+        if sms_provider == 'infobip':
+            # 1-qadam: Infobip SMS orqali yuborish
+            if self._send_sms_infobip(phone, otp, user.username):
+                sms_sent = True
+                delivery_method = 'sms'
+                logger.info("[OTP] Infobip SMS muvaffaqiyatli | user=%s", user.username)
+        elif sms_provider == 'eskiz':
+            # 1-qadam: Eskiz.uz SMS orqali yuborish
+            if self._send_sms_eskiz(phone, otp, user.username):
+                sms_sent = True
+                delivery_method = 'sms'
+                logger.info("[OTP] Eskiz.uz SMS muvaffaqiyatli | user=%s", user.username)
+        else:
+            # sms_provider == 'none' — SMS yuborish o'tkazib yuboriladi
+            logger.info("[OTP] SMS yuborish o'tkazib yuborildi (SMS_PROVIDER='none')")
 
         # 2-qadam: SMS ishlamasa — Telegram fallback
         if not sms_sent:
@@ -525,7 +615,6 @@ class SendOTPView(APIView):
         }
 
         # Agar SMS muvaffaqiyatli bo'lmasa — kodni response da qaytaramiz
-        # Bu foydalanuvchi kodini olishini kafolatlaydi
         if not sms_sent:
             response_data['otp_code'] = otp
 
