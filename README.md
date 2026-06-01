@@ -108,10 +108,66 @@ Loyihani o'z kompyuteringizda yurgizish uchun quyidagi qadamlarni bajaring:
 ## 📑 API Hujjatlari (Swagger)
 
 Loyiha ishga tushgandan so'ng, barcha API end-point'larni quyidagi manzillar orqali ko'rish mumkin:
-- **Swagger UI:** `http://localhost:8000/swagger/`
-- **ReDoc:** `http://localhost:8000/redoc/`
+- **🌐 Live Swagger UI:** [`https://tadbikor.uz/swagger/`](https://tadbikor.uz/swagger/)
+- **🌐 Live ReDoc:** [`https://tadbikor.uz/redoc/`](https://tadbikor.uz/redoc/)
+- **🛠 Local Swagger:** `http://localhost:8000/swagger/`
 
 ---
+
+## 📋 Barcha Faol API Endpointlar
+
+### 👤 Foydalanuvchilar (`/api/accounts/`)
+
+| Endpoint | Metod | Tavsif | Auth |
+|----------|-------|--------|------|
+| `/api/accounts/register/` | `POST` | Yangi foydalanuvchi ro'yxatdan o'tishi | Yo'q |
+| `/api/accounts/login/` | `POST` | Kirish — JWT access va refresh token olish | Yo'q |
+| `/api/accounts/token/refresh/` | `POST` | Access tokenni yangilash | Yo'q |
+| `/api/accounts/logout/` | `POST` | Joriy qurilmadan chiqish | ✅ Kerak |
+| `/api/accounts/logout-all/` | `POST` | Barcha qurilmalardan bir vaqtda chiqish | ✅ Kerak |
+| `/api/accounts/profile/` | `GET/PATCH` | Profilni ko'rish yoki tahrirlash | ✅ Kerak |
+| `/api/accounts/change-role/` | `POST` | Foydalanuvchi rolini o'zgartirish | ✅ Kerak |
+| `/api/accounts/send-otp/` | `POST` | Telefon tasdiqlash kodini yuborish | ✅ Kerak |
+| `/api/accounts/verify-otp/` | `POST` | Tasdiqlash kodini kiritib tasdiqlash | ✅ Kerak |
+| `/api/accounts/devices/` | `GET` | Barcha faol qurilmalar ro'yxati | ✅ Kerak |
+| `/api/accounts/devices/{id}/` | `DELETE` | Qurilmani majburan chiqarish (Force Logout) | ✅ Kerak |
+
+### 🛠️ Xizmatlar (`/api/services/`)
+
+| Endpoint | Metod | Tavsif | Auth |
+|----------|-------|--------|------|
+| `/api/services/categories/` | `GET` | Barcha kategoriyalar ro'yxati | Yo'q |
+| `/api/services/categories/{id}/` | `GET` | Bitta kategoriya tafsiloti | Yo'q |
+| `/api/services/skills/` | `GET` | Ko'nikmalar ro'yxati | Yo'q |
+| `/api/services/providers/` | `GET/POST` | Ustalar ro'yxati / Yangi profil yaratish | Yo'q / ✅ |
+| `/api/services/providers/{id}/` | `GET/PUT/PATCH/DELETE` | Usta profilini ko'rish yoki tahrirlash | Yo'q / ✅ |
+| `/api/services/providers/{id}/portfolio/` | `GET/POST` | Portfel ro'yxati / Yangi ish qo'shish | Yo'q / ✅ |
+| `/api/services/providers/{id}/portfolio/{pk}/` | `GET/PUT/DELETE` | Portfel elementini boshqarish | Yo'q / ✅ |
+| `/api/services/dashboard/stats/` | `GET` | Admin statistika (faqat admin) | ✅ Admin |
+
+### 📦 Buyurtmalar (`/api/orders/`)
+
+| Endpoint | Metod | Tavsif | Auth |
+|----------|-------|--------|------|
+| `/api/orders/requests/` | `GET/POST` | Buyurtmalar ro'yxati / Yangi buyurtma | ✅ Kerak |
+| `/api/orders/requests/{id}/` | `GET/PUT/PATCH/DELETE` | Buyurtma tafsiloti va tahrirlash | ✅ Kerak |
+| `/api/orders/requests/{id}/status/` | `PATCH` | Buyurtma holatini o'zgartirish | ✅ Kerak |
+| `/api/orders/reviews/` | `GET/POST` | Sharhlar ro'yxati / Yangi sharh | ✅ Kerak |
+| `/api/orders/reviews/{id}/` | `GET/PUT/DELETE` | Bitta sharhni boshqarish | ✅ Kerak |
+| `/api/orders/my-requests/` | `GET` | Faqat mening buyurtmalarim | ✅ Kerak |
+
+### 🔧 Tizim
+
+| Endpoint | Metod | Tavsif | Auth |
+|----------|-------|--------|------|
+| `/admin/` | `GET` | Django Admin paneli | ✅ Admin |
+| `/swagger/` | `GET` | Swagger interaktiv API hujjati | Yo'q |
+| `/redoc/` | `GET` | ReDoc API hujjati | Yo'q |
+
+> **Jami: 31 ta API endpoint + 3 ta tizim URL = 34 ta manzil** 🚀
+
+---
+
 
 ## ☁️ Deployment (AWS EC2)
 
