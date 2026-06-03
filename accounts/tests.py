@@ -377,3 +377,72 @@ class AuthTestCase(TestCase):
         # Redis'da kod saqlanganini tekshirish
         cache_key = f"otp_{self.user.id}"
         self.assertIsNotNone(cache.get(cache_key))
+
+
+# ═══════════════════════════════════════════════════════════════
+# 5. CHANGE ROLE TESTLARI
+# ═══════════════════════════════════════════════════════════════
+
+class ChangeRoleTest(APITestCase):
+    """POST /api/accounts/change-role/ — rol o'zgartirish testlari."""
+
+    URL = '/api/accounts/change-role/'
+
+    def setUp(self):
+        self.client_user = make_user('role_client', '+998900100001', role='client')
+        self.provider_user = make_user('role_provider', '+998900100002', role='provider')
+
+    def test_client_can_change_to_provider(self):
+        """Mijoz ustaga o'ta oladi va ProviderProfile yaratiladi."""
+        self.client.force_authenticate(user=self.client_user)
+        r = self.client.post(self.URL, {'role': 'provider'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['role'], 'provider')
+        # ProviderProfile avtomatik yaratilgan bo'lishi kerak
+        self.client_user.refresh_from_db()
+        self.assertEqual(self.client_user.role, 'provider')
+        from services.models import ProviderProfile
+        self.assertTrue(
+            ProviderProfile.objects.filter(user=self.client_user).exists(),
+            "ProviderProfile yaratilmadi!"
+        )
+
+    def test_provider_can_change_to_client(self):
+        """Usta mijozga o'ta oladi."""
+        self.client.force_authenticate(user=self.provider_user)
+        r = self.client.post(self.URL, {'role': 'client'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['role'], 'client')
+        self.provider_user.refresh_from_db()
+        self.assertEqual(self.provider_user.role, 'client')
+
+    def test_same_role_change_returns_400(self):
+        """Bir xil rolga o'tishda 400 qaytariladi."""
+        self.client.force_authenticate(user=self.client_user)
+        r = self.client.post(self.URL, {'role': 'client'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_invalid_role_returns_400(self):
+        """Noto'g'ri rol qiymati 400 qaytaradi."""
+        self.client.force_authenticate(user=self.client_user)
+        for bad_role in ['admin', 'superuser', '', 'random']:
+            r = self.client.post(self.URL, {'role': bad_role}, format='json')
+            self.assertEqual(r.status_code, 400, f"'{bad_role}' roli qabul qilindi — kutilmagan!")
+
+    def test_unauthenticated_cannot_change_role(self):
+        """Kirмagan foydalanuvchi rol o'zgartira olmaydi."""
+        r = self.client.post(self.URL, {'role': 'provider'}, format='json')
+        self.assertEqual(r.status_code, 401)
+
+    def test_missing_role_field_returns_400(self):
+        """Bo'sh body bilan so'rov 400 qaytaradi."""
+        self.client.force_authenticate(user=self.client_user)
+        r = self.client.post(self.URL, {}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_response_contains_new_role(self):
+        """Response da yangi rol qaytarilishi kerak."""
+        self.client.force_authenticate(user=self.client_user)
+        r = self.client.post(self.URL, {'role': 'provider'}, format='json')
+        self.assertIn('role', r.data)
+        self.assertIn('detail', r.data)
