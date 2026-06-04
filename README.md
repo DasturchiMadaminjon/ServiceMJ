@@ -1,6 +1,6 @@
 # 🚀 ServiceMJ.uz — Mahalliy Ustalar va Xizmatlar Bozorini Raqamlashtirish Platformasi
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-4.2+-green.svg)](https://www.djangoproject.com/)
 [![DRF](https://img.shields.io/badge/DRF-3.14+-red.svg)](https://www.django-rest-framework.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
@@ -33,7 +33,7 @@ O‘zbekistonda ishonchli ustani topish ko'p hollarda "og‘zaki tavsiya" yoki i
 
 ## 🛠 Texnologiyalar Steki
 
-- **Backend:** Python 3.10+, Django 4.2+, Django Rest Framework (DRF).
+- **Backend:** Python 3.11, Django 4.2+, Django Rest Framework (DRF).
 - **Ma'lumotlar bazasi:** PostgreSQL (Relational Data & JSONB support).
 - **Konteynerizatsiya:** Docker & Docker-Compose.
 - **Asinxron vazifalar:** Celery & Redis (Bildirishnomalar va bot integratsiyasi).
@@ -86,8 +86,8 @@ Loyihani o'z kompyuteringizda yurgizish uchun quyidagi qadamlarni bajaring:
 
 1. **Repozitoriyani klonlang:**
    ```bash
-   git clone https://github.com/username/servicehub.git
-   cd servicehub
+   git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
+   cd ServiceHub
    ```
 
 2. **Muhit o'zgaruvchilarini sozlang:**
@@ -95,12 +95,19 @@ Loyihani o'z kompyuteringizda yurgizish uchun quyidagi qadamlarni bajaring:
 
 3. **Docker orqali ishga tushiring:**
    ```bash
-   docker-compose up --build
+   docker build -t servicehub-web:latest .
+   docker-compose up -d
    ```
 
 4. **Migratsiyalarni bajaring:**
    ```bash
    docker-compose exec web python manage.py migrate
+   docker-compose exec web python manage.py collectstatic --noinput
+   ```
+
+5. **Testlarni ishga tushiring:**
+   ```bash
+   docker-compose exec web python manage.py test accounts services orders -v 2
    ```
 
 ---
@@ -173,12 +180,51 @@ Loyiha ishga tushgandan so'ng, barcha API end-point'larni quyidagi manzillar orq
 
 Loyiha AWS EC2 serverida Docker-compose yordamida joylashtirilgan. Nginx konteyneri SSL sertifikatlari va trafikni boshqarish uchun mas'uldir.
 
+| Resurs | Manzil |
+|--------|--------|
+| 🌐 **Ishlab turgan server** | [`https://tadbikor.uz`](https://tadbikor.uz) |
+| 📘 **Swagger UI** | [`https://tadbikor.uz/swagger/`](https://tadbikor.uz/swagger/) |
+| 📗 **ReDoc** | [`https://tadbikor.uz/redoc/`](https://tadbikor.uz/redoc/) |
+| 🐙 **GitHub** | [`DasturchiMadaminjon/ServiceHub`](https://github.com/DasturchiMadaminjon/ServiceHub) |
+
+### 🔧 Serverda yangilash
+```bash
+cd ~/ServiceHub
+git pull origin main
+sudo docker build -t servicehub-web:latest .
+sudo docker-compose up -d
+sudo docker-compose logs --tail=20 web
+```
+
+---
+
+## 🧪 Testlar
+
+Loyihada **153 ta TDD testi** mavjud. Barcha testlarni ishga tushirish:
+
+```bash
+# Barcha testlar
+docker-compose exec web python manage.py test accounts services orders -v 2
+
+# Alohida app testlari
+docker-compose exec web python manage.py test accounts -v 2
+docker-compose exec web python manage.py test orders -v 2
+docker-compose exec web python manage.py test services -v 2
+```
+
+| App | Testlar soni | Qamrov |
+|-----|-------------|--------|
+| `accounts` | 33 ta | Register, Login, OTP, DeviceSession, ChangeRole |
+| `orders` | 42 ta | ServiceRequest CRUD, Status zanjiri, Review |
+| `services` | 78 ta | Provider, Portfolio, Dashboard, Stress test |
+| **Jami** | **153 ta** | **To'liq MVP qamrov** |
+
 ---
 
 ## 👨‍💻 Muallif va Tavsiyanoma
 
-**Komiljon Xamidjonov**  
-*Backend Development Kursi bitiruvchisi (2025)*
+**Madaminjon Jorayev**  
+*Backend Development Kursi bitiruvchisi (2026)*
 
 > **Tavsiyanoma:** ServiceMJ.uz — nafaqat kurs ishi, balki O'zbekiston xizmatlar bozorini raqamlashtirish sari qo'yilgan professional qadamdir. Loyiha kengayishga va real biznes talablariga to'liq javob beradi.
 
