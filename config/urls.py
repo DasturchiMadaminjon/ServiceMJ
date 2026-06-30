@@ -11,7 +11,7 @@ schema_view = get_schema_view(
         title="ServiceMJ API",
         default_version='v1',
         description="Xizmat ko'rsatuvchilar va mijozlarni bog'lovchi platforma API",
-        contact=openapi.Contact(name="Contact the developer", url="https://t.me/Madaminjon2733", email="support@servicemj.uz"),
+        contact=openapi.Contact(name="Contact the developer", url="https://t.me/Madaminjon2733", email="madaminjonjorayev09@gmail.com"),
         license=openapi.License(name="MIT License"),
     ),
     public=True,
