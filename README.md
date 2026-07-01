@@ -38,7 +38,7 @@ O‘zbekistonda ishonchli ustani topish ko'p hollarda "og‘zaki tavsiya" yoki i
 - **Konteynerizatsiya:** Docker & Docker-Compose.
 - **Asinxron vazifalar:** Celery & Redis (Bildirishnomalar va bot integratsiyasi).
 - **Hujjatlashtirish:** Swagger (drf-yasg).
-- **Cloud:** AWS EC2 (Ubuntu 22.04 LTS).
+- **Cloud/OS:** AWS EC2 (Amazon Linux 2023).
 
 ---
 
