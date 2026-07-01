@@ -1,24 +1,28 @@
 #!/bin/bash
 
-# ServiceHub.uz Deployment Script
-# Bu skript Ubuntu serverida Docker-ni o'rnatadi va loyihani ishga tushiradi.
+# ServiceMJ (Tadbikor.uz) Deployment Script - AWS Amazon Linux 2023
+# Antigravity Protocol bo'yicha AWS muhiti uchun moslashtirilgan.
 
-echo "🚀 Tizim yangilanmoqda..."
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg lsb-release
+echo "🚀 Tizim yangilanmoqda (Amazon Linux)..."
+sudo dnf update -y
 
-echo "🐳 Docker o'rnatilmoqda..."
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "🐳 Docker va xizmatlarni tekshirish..."
+if ! command -v docker &> /dev/null; then
+    echo "Docker o'rnatilmoqda..."
+    sudo dnf install docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
+    sudo usermod -aG docker ec2-user
+fi
 
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# Agar docker-compose o'rnatilmagan bo'lsa
+if ! command -v docker-compose &> /dev/null; then
+    echo "Docker Compose o'rnatilmoqda..."
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+fi
 
-echo "📂 Loyihani GitHub-dan yuklab olish..."
-# Agar papka mavjud bo'lsa yangilaydi, bo'lmasa klonlaydi
+echo "📂 Loyihani GitHub-dan yuklab olish (ServiceMJ)..."
 if [ -d "ServiceHub" ]; then
     cd ServiceHub
     git pull origin main
@@ -27,8 +31,7 @@ else
     cd ServiceHub
 fi
 
-echo "⚙️ .env faylini yaratish..."
-# Bu yerda .env faylini yaratib oling yoki qo'lda to'ldiring
+echo "⚙️ .env faylini tekshirish..."
 if [ ! -f ".env" ]; then
     cat <<EOT >> .env
 DEBUG=0
@@ -39,14 +42,15 @@ CELERY_BROKER_URL=redis://redis:6379/0
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_ADMIN_CHAT_ID=your_chat_id_here
 EOT
-    echo "⚠️ .env yaratildi. Iltimos, Telegram tokenlarini o'zgartiring!"
+    echo "⚠️ .env yaratildi. Iltimos, uning ichidagi parollar va tokenlarni serverga moslang!"
 fi
 
-echo "🏗 Docker konteynerlar ishga tushirilmoqda..."
-sudo docker compose up -d --build
+echo "🏗 Docker konteynerlar ishga tushirilmoqda (Klassik usul)..."
+# AWS muhitidagi Buildx versiyasi xatoligini aylanib o'tish uchun:
+sudo DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build
 
 echo "🔄 Migratsiyalar bajarilmoqda..."
-sudo docker compose exec web python manage.py migrate
+sudo docker-compose exec web python manage.py migrate
 
-echo "✅ Deployment yakunlandi!"
-echo "📍 Loyiha manzili: http://$(curl -s ifconfig.me):8000/swagger/"
+echo "✅ ServiceMJ loyihasi muvaffaqiyatli ishga tushdi!"
+echo "📍 API Hujjatlari: https://tadbikor.uz/swagger/"
