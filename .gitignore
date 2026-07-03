@@ -36,3 +36,10 @@ test_manual.sqlite3
 node_modules/
 frontend/dist/
 frontend/.env
+
+# Demo fayllar (git tarixini og'irlashmasin)
+demo_screenshots/
+*.pdf
+kurs_ishi_topshirig'i/
+demo_script.py
+app.log

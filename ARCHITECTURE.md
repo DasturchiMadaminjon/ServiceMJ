@@ -120,10 +120,10 @@ Testlar har bir Django app ichida joylashgan:
 
 | Fayl | Testlar | Qamrov |
 |------|---------|--------|
-| `accounts/tests.py` | 33 ta | Register, Login, OTP, DeviceSession, Token Refresh, Logout, ChangeRole |
-| `orders/tests.py` | 42 ta | ServiceRequest CRUD, Status zanjiri, Review, MyRequests |
-| `services/tests.py` | 78 ta | Provider, Portfolio, Dashboard, Celery tasks, Stress test, To'liq stsenariy |
-| **Jami** | **153 ta** | — |
+| `accounts/tests.py` | 31 ta | Register, Login, OTP, DeviceSession, Token Refresh, Logout, ChangeRole |
+| `orders/tests.py` | 48 ta | ServiceRequest CRUD, Status zanjiri, Review, MyRequests |
+| `services/tests.py` | 82 ta | Provider, Portfolio, Dashboard, Celery tasks, Stress test, To'liq stsenariy |
+| **Jami** | **161 ta** | ~88% qamrov |
 
 **Testlarni ishga tushirish:**
 ```bash
@@ -161,7 +161,9 @@ docker-compose exec web python manage.py test accounts services orders -v 2
 | 2026-05-24 | OTP, DeviceSession, JWT qo'shildi | Madaminjon |
 | 2026-05-30 | HTTPS (Let's Encrypt), ALLOWED_HOSTS tuzatildi | Madaminjon |
 | 2026-06-01 | SMS_PROVIDER zanjiri (Infobip/Eskiz/Telegram/Display) | Madaminjon |
-| 2026-06-03 | orders/tests.py to'ldirildi (42 ta test), ChangeRole testlari | Madaminjon |
+| 2026-06-03 | orders/tests.py to'ldirildi (48 ta test), ChangeRole testlari | Madaminjon |
+| 2026-07-03 | swagger_qollanma.md qo'shildi (31 endpoint, O'zbek tili) | Madaminjon |
+| 2026-07-03 | API test — 24 endpoint 100% muvaffaqiyat, .gitignore yangilandi | Madaminjon |
 
 ---
-*Oxirgi yangilanish: 2026-06-03*
+*Oxirgi yangilanish: 2026-07-03*

@@ -191,16 +191,19 @@ Loyiha AWS EC2 serverida Docker-compose yordamida joylashtirilgan. Nginx konteyn
 ```bash
 cd ~/ServiceHub
 git pull origin main
-sudo docker build -t servicehub-web:latest .
-sudo docker-compose up -d
+sudo docker-compose down
+sudo docker-compose up -d --build
 sudo docker-compose logs --tail=20 web
 ```
+
+### 📖 API Qo'llanma
+> To'liq API endpointlar tavsifi (O'zbek tilida) va Swagger ishlatish bo'yicha: [`swagger_qollanma.md`](swagger_qollanma.md)
 
 ---
 
 ## 🧪 Testlar
 
-Loyihada **153 ta TDD testi** mavjud. Barcha testlarni ishga tushirish:
+Loyihada **161 ta TDD testi** mavjud (~88% qamrov). Barcha testlarni ishga tushirish:
 
 ```bash
 # Barcha testlar
@@ -214,10 +217,10 @@ docker-compose exec web python manage.py test services -v 2
 
 | App | Testlar soni | Qamrov |
 |-----|-------------|--------|
-| `accounts` | 33 ta | Register, Login, OTP, DeviceSession, ChangeRole |
-| `orders` | 42 ta | ServiceRequest CRUD, Status zanjiri, Review |
-| `services` | 78 ta | Provider, Portfolio, Dashboard, Stress test |
-| **Jami** | **153 ta** | **To'liq MVP qamrov** |
+| `accounts` | 31 ta | Register, Login, OTP, DeviceSession, ChangeRole |
+| `orders` | 48 ta | ServiceRequest CRUD, Status zanjiri, Review |
+| `services` | 82 ta | Provider, Portfolio, Dashboard, Stress test |
+| **Jami** | **161 ta** | **~88% qamrov** |
 
 ---
 
