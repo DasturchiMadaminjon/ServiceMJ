@@ -23,12 +23,18 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo "📂 Loyihani GitHub-dan yuklab olish (ServiceMJ)..."
-if [ -d "ServiceHub" ]; then
-    cd ServiceHub
-    git pull origin main
+# Agar papka nomi ServiceHub bo'lmasa, demak biz tashqaridamiz
+if [ "${PWD##*/}" != "ServiceHub" ]; then
+    if [ -d "ServiceHub" ]; then
+        cd ServiceHub
+        git pull origin main
+    else
+        git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
+        cd ServiceHub
+    fi
 else
-    git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
-    cd ServiceHub
+    # Allaqachon ServiceHub ichida bo'lsak
+    git pull origin main
 fi
 
 echo "⚙️ .env faylini tekshirish..."
