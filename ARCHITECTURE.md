@@ -100,6 +100,7 @@ POST /api/accounts/send-otp/
 | Maxfiy ma'lumotlar | `.env` fayli, hech qachon kodda yozilmaydi |
 | Bot hujumlari | `ALLOWED_HOSTS` + Nginx rate limiting |
 | SSL/HTTPS | Let's Encrypt sertifikati |
+| Frontend Double-Submit | `isCreatingRequest` bayrog'i orqali tugmalarni qulflash |
 
 ---
 
@@ -164,6 +165,7 @@ docker-compose exec web python manage.py test accounts services orders -v 2
 | 2026-06-03 | orders/tests.py to'ldirildi (48 ta test), ChangeRole testlari | Madaminjon |
 | 2026-07-03 | swagger_qollanma.md qo'shildi (31 endpoint, O'zbek tili) | Madaminjon |
 | 2026-07-03 | API test — 24 endpoint 100% muvaffaqiyat, .gitignore yangilandi | Madaminjon |
+| 2026-07-03 | Frontend: Double-submit himoyasi, Backend: Deploy script tuzatildi | Madaminjon |
 
 ---
 *Oxirgi yangilanish: 2026-07-03*
