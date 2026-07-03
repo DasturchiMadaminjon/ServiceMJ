@@ -612,28 +612,43 @@ async function loadCategories() {
   }
 }
 
+let isCreatingRequest = false;
 async function createRequest() {
-  const errEl = document.getElementById('cr-err');
-  errEl.classList.add('hidden');
-  const body = {
-    description: document.getElementById('cr-desc').value.trim(),
-    category:    document.getElementById('cr-category').value || null,
-    address:     document.getElementById('cr-address').value.trim(),
-    budget:      document.getElementById('cr-budget').value || null,
-    currency:    document.getElementById('cr-currency').value || 'UZS',
-    provider:    state.hireProviderId || null,
-  };
-  if (!body.description) { showErr(errEl, 'Tavsif kiritish shart'); return; }
-  const r = await api('/orders/requests/', { method: 'POST', body: JSON.stringify(body) });
-  const d = await r.json();
-  if (!r.ok) { showErr(errEl, Object.values(d).flat().join(' ')); return; }
-  toast('Buyurtma yuborildi!', 'success');
-  state.hireProviderId = null; // Ishlatilgandan so'ng tozalash
-  document.getElementById('cr-desc').value = '';
-  document.getElementById('cr-address').value = '';
-  document.getElementById('cr-budget').value = '';
-  document.getElementById('cr-currency').value = 'UZS';
-  showPage('my-requests');
+  if (isCreatingRequest) return;
+  isCreatingRequest = true;
+  try {
+    const errEl = document.getElementById('cr-err');
+    errEl.classList.add('hidden');
+    const body = {
+      description: document.getElementById('cr-desc').value.trim(),
+      category:    document.getElementById('cr-category').value || null,
+      address:     document.getElementById('cr-address').value.trim(),
+      budget:      document.getElementById('cr-budget').value || null,
+      currency:    document.getElementById('cr-currency').value || 'UZS',
+      provider:    state.hireProviderId || null,
+    };
+    if (!body.description) { showErr(errEl, 'Tavsif kiritish shart'); return; }
+    
+    // Tugmani vizual bloklash (agar ID si ma'lum bo'lsa)
+    const btn = document.querySelector('#page-create-request .btn-primary');
+    if(btn) { btn.disabled = true; btn.innerHTML = 'Yuborilmoqda...'; }
+
+    const r = await api('/orders/requests/', { method: 'POST', body: JSON.stringify(body) });
+    const d = await r.json();
+    
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Yuborish'; }
+
+    if (!r.ok) { showErr(errEl, Object.values(d).flat().join(' ')); return; }
+    toast('Buyurtma yuborildi!', 'success');
+    state.hireProviderId = null; // Ishlatilgandan so'ng tozalash
+    document.getElementById('cr-desc').value = '';
+    document.getElementById('cr-address').value = '';
+    document.getElementById('cr-budget').value = '';
+    document.getElementById('cr-currency').value = 'UZS';
+    showPage('my-requests');
+  } finally {
+    isCreatingRequest = false;
+  }
 }
 
 // ─── PROFILE ────────────────────────────────────────
