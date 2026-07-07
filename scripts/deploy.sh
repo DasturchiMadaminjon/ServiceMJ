@@ -29,7 +29,7 @@ if [ "${PWD##*/}" != "ServiceHub" ]; then
         cd ServiceHub
         git pull origin main
     else
-        git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
+        git clone https://github.com/DasturchiMadaminjon/ServiceMJ.git
         cd ServiceHub
     fi
 else

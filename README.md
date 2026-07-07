@@ -86,7 +86,7 @@ Loyihani o'z kompyuteringizda yurgizish uchun quyidagi qadamlarni bajaring:
 
 1. **Repozitoriyani klonlang:**
    ```bash
-   git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
+   git clone https://github.com/DasturchiMadaminjon/ServiceMJ.git
    cd ServiceHub
    ```
 
@@ -185,7 +185,7 @@ Loyiha AWS EC2 serverida Docker-compose yordamida joylashtirilgan. Nginx konteyn
 | 🌐 **Ishlab turgan server** | [`https://tadbikor.uz`](https://tadbikor.uz) |
 | 📘 **Swagger UI** | [`https://tadbikor.uz/swagger/`](https://tadbikor.uz/swagger/) |
 | 📗 **ReDoc** | [`https://tadbikor.uz/redoc/`](https://tadbikor.uz/redoc/) |
-| 🐙 **GitHub** | [`DasturchiMadaminjon/ServiceHub`](https://github.com/DasturchiMadaminjon/ServiceHub) |
+| 🐙 **GitHub** | [`DasturchiMadaminjon/ServiceMJ`](https://github.com/DasturchiMadaminjon/ServiceMJ) |
 
 ### 🔧 Serverda yangilash
 ```bash

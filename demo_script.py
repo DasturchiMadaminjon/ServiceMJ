@@ -355,7 +355,7 @@ def demo_website(driver):
     time.sleep(3)
     screenshot(driver, "18_yakuniy_swagger")
     print("  TUSHUNTIRISH: Barcha endpointlar muvaffaqiyatli namoyish qilindi.")
-    print("  GitHub: github.com/DasturchiMadaminjon/ServiceHub")
+    print("  GitHub: github.com/DasturchiMadaminjon/ServiceMJ")
     time.sleep(3)
 
     print("\n  SAYT NAMOYISHI YAKUNLANDI!")
@@ -422,7 +422,7 @@ def main():
         print(f"  1. Video taqdimot (ekran yozuvingiz)")
         print(f"  2. PDF hisobot: {pdf}")
         print(f"  3. Swagger URL: {SWAGGER_URL}")
-        print(f"  4. GitHub: https://github.com/DasturchiMadaminjon/ServiceHub")
+        print(f"  4. GitHub: https://github.com/DasturchiMadaminjon/ServiceMJ")
         print(f"  5. Live sayt: {BASE_URL}")
 
         input("\nBrauzer yopilishi uchun Enter bosing...")

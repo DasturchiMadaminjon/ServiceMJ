@@ -88,7 +88,7 @@ Follow these steps to run the project on your local machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/DasturchiMadaminjon/ServiceHub.git
+   git clone https://github.com/DasturchiMadaminjon/ServiceMJ.git
    cd ServiceHub
    ```
 
@@ -132,7 +132,7 @@ The project is deployed on an AWS EC2 instance using Docker-Compose. The Nginx c
 | Resource | Link |
 |----------|------|
 | 🌐 **Live Server** | [`https://tadbikor.uz`](https://tadbikor.uz) |
-| 🐙 **GitHub Repo** | [`DasturchiMadaminjon/ServiceHub`](https://github.com/DasturchiMadaminjon/ServiceHub) |
+| 🐙 **GitHub Repo** | [`DasturchiMadaminjon/ServiceMJ`](https://github.com/DasturchiMadaminjon/ServiceMJ) |
 
 ### 🔧 Server Update Commands
 ```bash

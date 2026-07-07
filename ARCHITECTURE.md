@@ -148,7 +148,7 @@ docker-compose exec web python manage.py test accounts services orders -v 2
 | Resurs | Manzil |
 |--------|--------|
 | Live server | `https://tadbikor.uz` |
-| GitHub | `https://github.com/DasturchiMadaminjon/ServiceHub` |
+| GitHub | `https://github.com/DasturchiMadaminjon/ServiceMJ` |
 | Swagger | `https://tadbikor.uz/swagger/` |
 | Admin | `https://tadbikor.uz/admin/` |
 
