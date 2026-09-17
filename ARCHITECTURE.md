@@ -50,7 +50,18 @@ Ushbu hujjat loyihaning texnik tuzilishi, modullar orasidagi bog'liqlik va xavfs
 - **`logic.py`**: `select_for_update()` orqali Race Condition oldini olish (tranzaksiya darajasida qulflash).
 
 ### 4. `frontend` — Statik Fayllar
-- `index.html`, `app.js`, `style.css` — Nginx tomonidan to'g'ridan-to'g'ri xizmat qilinadi.
+- `index.html` — Asosiy SPA. **Auth oynasi (`page-auth`)** birinchi ko'rinadi.
+- `app.js` — Barcha biznes mantig'i. `DOMContentLoaded` da token yo'q bo'lsa `showPage('auth')` chaqiriladi.
+- `style.css` — Barcha stillar.
+- `geo-metric-92a207.html` — Yer o'lchash dasturi (yangi tabda ochiladi).
+- `neuromind_ultimate_v3.html` — Xotira rivojlantirish dasturi (yangi tabda ochiladi).
+
+### 5. `nginx/` — Nginx Konfiguratsiyasi
+- `default.conf` — Asosiy konfiguratsiya:
+  - `/api/*` → Django (Gunicorn, port 8000)
+  - `/admin/*`, `/swagger/*` → Django
+  - `/geo-metric-92a207.html`, `/neuromind_ultimate_v3.html` → To'g'ridan fayl
+  - `location /` → `try_files $uri $uri/ /index.html` (SPA routing)
 
 ---
 
@@ -67,8 +78,18 @@ Brauzer/Mobil
      │                        ├──► [Redis] ◄──► [Celery Worker]
      │                        │                      │
      │                        │               [Telegram Bot]
-     └──/static, /media──► [Nginx static]
+     ├──/media/*────► [Nginx /var/www/media/]
+     ├──/*.html─────► [Nginx /var/www/frontend/]  ← geo-metric, neuromind
+     └──/──────────► [Nginx → index.html]  ← Auth oynasi ko'rinadi
 ```
+
+### ⚠️ Auth Ko'rinish Mexanizmi
+1. Foydalanuvchi `tadbikor.uz` ga kiradi
+2. Nginx `try_files` → `index.html` beradi
+3. `app.js` `DOMContentLoaded` ishga tushadi
+4. `localStorage` da token yo'q → `showPage('auth')` → Registratsiya/Login oynasi ko'rinadi
+5. Token mavjud → `initApp()` → Asosiy sahifa ko'rinadi
+
 
 ### OTP Yuborish Zanjiri
 
@@ -123,8 +144,8 @@ Testlar har bir Django app ichida joylashgan:
 |------|---------|--------|
 | `accounts/tests.py` | 31 ta | Register, Login, OTP, DeviceSession, Token Refresh, Logout, ChangeRole |
 | `orders/tests.py` | 48 ta | ServiceRequest CRUD, Status zanjiri, Review, MyRequests |
-| `services/tests.py` | 82 ta | Provider, Portfolio, Dashboard, Celery tasks, Stress test, To'liq stsenariy |
-| **Jami** | **161 ta** | ~88% qamrov |
+| `services/tests.py` | 93 ta | Provider, Portfolio, Dashboard, Celery tasks, Stress test, **Frontend fayllar (11 ta yangi)** |
+| **Jami** | **172 ta** | ~90% qamrov |
 
 **Testlarni ishga tushirish:**
 ```bash
@@ -168,6 +189,9 @@ docker-compose exec web python manage.py test accounts services orders -v 2
 | 2026-07-03 | Frontend: Double-submit himoyasi, Backend: Deploy script tuzatildi | Madaminjon |
 | 2026-07-28 | Sentry DisallowedHost xatolari bartaraf etildi, ALLOWED_HOSTS va CSRF moslashtirildi, ortiqcha subdomenlar olib tashlandi | Madaminjon |
 | 2026-08-30 | Frontend UI yangilandi: "Qo'shimcha" menyusi (Yer o'lchash, Xotira) va Ustalar sahifasiga Kategoriya filtri qo'shildi | Madaminjon |
+| 2026-08-30 | Bloklangan foydalanuvchi uchun login xatosiga Telegram admin linki (@Madaminjon01) qo'shildi | Madaminjon |
+| 2026-09-17 | Nginx konfiguratsiyasi (nginx/default.conf) qo'shildi — Auth oynasi muammosi hal qilindi | Madaminjon |
+| 2026-09-17 | TDD: FrontendFilesTest (11 ta test) qo'shildi — index.html, app.js, nginx integratsiyasi | Madaminjon |
 
 ---
-*Oxirgi yangilanish: 2026-08-30*
+*Oxirgi yangilanish: 2026-09-17*

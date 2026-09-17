@@ -764,6 +764,96 @@ class SwaggerTest(APITestCase):
 # ═══════════════════════════════════════════════════
 # 12. CHEKSIZ FOYDALANUVCHI — STRESS SCENARIYLAR
 # ═══════════════════════════════════════════════════
+import os
+from django.conf import settings
+
+class FrontendFilesTest(TestCase):
+    """
+    Frontend fayllarning (index.html, geo-metric, neuromind) to'g'ri integratsiya
+    qilinganligini va DOMContentLoaded da auth oynasi birinchi ko'rinishini
+    tekshiruvchi TDD test.
+    """
+    def setUp(self):
+        self.frontend_dir = os.path.join(settings.BASE_DIR, 'frontend')
+        self.index_path = os.path.join(self.frontend_dir, 'index.html')
+        with open(self.index_path, 'r', encoding='utf-8') as f:
+            self.content = f.read()
+
+    def test_index_html_exists(self):
+        """index.html fayli mavjudligini tekshirish."""
+        self.assertTrue(os.path.exists(self.index_path), "index.html fayli topilmadi!")
+
+    def test_auth_page_present_in_html(self):
+        """Auth oynasi (id='page-auth') index.html da borligini tekshirish."""
+        self.assertIn('id="page-auth"', self.content,
+                      "index.html ichida Auth/Registratsiya oynasi (page-auth) yo'q!")
+
+    def test_login_tab_exists(self):
+        """Login tab elementi (id='tab-login') mavjudligini tekshirish."""
+        self.assertIn('id="tab-login"', self.content,
+                      "index.html ichida Login tab (tab-login) yo'q!")
+
+    def test_login_form_exists(self):
+        """Login form elementi (id='form-login') mavjudligini tekshirish."""
+        self.assertIn('id="form-login"', self.content,
+                      "index.html ichida Login form (form-login) yo'q!")
+
+    def test_register_tab_exists(self):
+        """Ro'yxatdan o'tish tab elementi (id='tab-reg') mavjudligini tekshirish."""
+        self.assertIn('id="tab-reg"', self.content,
+                      "index.html ichida Register tab (tab-reg) yo'q!")
+
+    def test_navbar_starts_hidden(self):
+        """Navbar foydalanuvchi login qilmagan holda 'hidden' bo'lishi kerak."""
+        self.assertIn('id="navbar" class="hidden"', self.content,
+                      "Navbar login qilmagan foydalanuvchiga ko'rinib turibdi!")
+
+    def test_domcontentloaded_shows_auth_first(self):
+        """app.js DOMContentLoaded da birinchi navbatda auth sahifasini ko'rsatishi kerak."""
+        app_path = os.path.join(self.frontend_dir, 'app.js')
+        self.assertTrue(os.path.exists(app_path), "app.js fayli topilmadi!")
+        with open(app_path, 'r', encoding='utf-8') as f:
+            js = f.read()
+        # Tokenlar bo'lmasa showPage('auth') chaqirilishi shart
+        self.assertIn("showPage('auth')", js,
+                      "app.js ichida showPage('auth') chaqiruvi topilmadi!")
+        # DOMContentLoaded listener mavjud bo'lishi shart
+        self.assertIn("DOMContentLoaded", js,
+                      "app.js ichida DOMContentLoaded event listener topilmadi!")
+
+    def test_blocked_user_sees_telegram_link(self):
+        """Login xatosi xabarida admin Telegram linki ko'rinishi kerak."""
+        app_path = os.path.join(self.frontend_dir, 'app.js')
+        with open(app_path, 'r', encoding='utf-8') as f:
+            js = f.read()
+        self.assertIn('t.me/Madaminjon01', js,
+                      "Bloklangan foydalanuvchi uchun Telegram link (t.me/Madaminjon01) app.js da yo'q!")
+
+    def test_additional_tools_are_linked(self):
+        """Qo'shimcha HTML dasturlarning fayllari mavjudligi va to'g'ri ulanganligini tekshirish."""
+        geo_path = os.path.join(self.frontend_dir, 'geo-metric-92a207.html')
+        neuro_path = os.path.join(self.frontend_dir, 'neuromind_ultimate_v3.html')
+
+        self.assertTrue(os.path.exists(geo_path), "Yer o'lchash fayli (geo-metric-92a207.html) yo'q!")
+        self.assertTrue(os.path.exists(neuro_path), "Xotira mashqi fayli (neuromind_ultimate_v3.html) yo'q!")
+        self.assertIn('geo-metric-92a207.html', self.content,
+                      "Yer o'lchash index.html ga ulanmagan!")
+        self.assertIn('neuromind_ultimate_v3.html', self.content,
+                      "Xotira mashqi index.html ga ulanmagan!")
+
+    def test_tools_open_in_new_tab(self):
+        """Qo'shimcha dasturlar yangi tabda ochilishi kerak (window.open)."""
+        self.assertIn("window.open('/geo-metric-92a207.html', '_blank')", self.content,
+                      "Yer o'lchash yangi tabda ochilmaydi!")
+        self.assertIn("window.open('/neuromind_ultimate_v3.html', '_blank')", self.content,
+                      "Xotira mashqi yangi tabda ochilmaydi!")
+
+    def test_nginx_conf_exists(self):
+        """Nginx konfiguratsiya fayli mavjudligini tekshirish."""
+        nginx_conf = os.path.join(settings.BASE_DIR, 'nginx', 'default.conf')
+        self.assertTrue(os.path.exists(nginx_conf),
+                        "nginx/default.conf fayli topilmadi! Nginx konfiguratsiyasi kerak.")
+
 class StressScenarioTest(APITestCase):
     """Ko'p foydalanuvchi bir vaqtda ishlatsa ham tizim barqaror ishlashi."""
 
