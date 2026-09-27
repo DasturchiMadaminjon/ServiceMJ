@@ -338,6 +338,48 @@ class DeviceSessionTest(APITestCase):
         self.assertIn('access', r.data)
         self.assertIn('refresh', r.data)
 
+    def test_unauthenticated_cannot_access_devices(self):
+        """Autentifikatsiyadan o'tmagan foydalanuvchi qurilmalar ro'yxatini ko'ra olmasligi kerak (401)."""
+        r = self.client.get('/api/accounts/devices/')
+        self.assertEqual(r.status_code, 401)
+
+    def test_x_forwarded_for_ip_capture(self):
+        """X-Forwarded-For orqali kelgan haqiqiy mijoz IP manzili saqlanishi kerak."""
+        self.client.post(
+            '/api/accounts/login/',
+            {'username': 'testuser', 'password': 'Pass1234!'},
+            format='json',
+            HTTP_X_FORWARDED_FOR='198.51.100.42, 10.0.0.1',
+        )
+        session = DeviceSession.objects.filter(user=self.user).first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.ip_address, '198.51.100.42')
+
+    def test_parse_device_name_helper_detects_platforms(self):
+        """User-agent tahlil qiluvchi yordamchi funksiya turli platformalarni aniqlashi kerak."""
+        from accounts.views import _parse_device_name
+        ua_android = 'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Chrome/120.0 Mobile'
+        self.assertIn('Android', _parse_device_name(ua_android))
+        self.assertIn('Chrome', _parse_device_name(ua_android))
+
+        ua_windows = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edg/120.0'
+        self.assertIn('Windows', _parse_device_name(ua_windows))
+        self.assertIn('Edge', _parse_device_name(ua_windows))
+
+    def test_admin_clear_sessions_bulk_action(self):
+        """Admin paneldagi clear_sessions action tanlangan sessiyalarni o'chirishi kerak."""
+        from accounts.admin import clear_sessions
+        session1 = DeviceSession.objects.create(user=self.user, refresh_jti='jti-1', device_name='Dev 1')
+        session2 = DeviceSession.objects.create(user=self.user, refresh_jti='jti-2', device_name='Dev 2')
+
+        mock_modeladmin = MagicMock()
+        mock_request = MagicMock()
+        qs = DeviceSession.objects.filter(id__in=[session1.id, session2.id])
+
+        clear_sessions(mock_modeladmin, mock_request, qs)
+        self.assertFalse(DeviceSession.objects.filter(id__in=[session1.id, session2.id]).exists())
+
+
 
 # ═══════════════════════════════════════════════════════════════
 # 4. OTP — Eski testlar (mavjud)
