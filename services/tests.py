@@ -1045,3 +1045,69 @@ class FullMonthScenarioTest(APITestCase):
         self.assertEqual(r.status_code, 200)
 
         print("[OK] To'liq hayotiy stsenariy muvaffaqiyatli yakunlandi!")
+
+
+# ═══════════════════════════════════════════════════
+# 13. KATEGORIYA VA KO'NIKMALAR MOSLIGI VA BIR XILLIGI TESTLARI (TDD)
+# ═══════════════════════════════════════════════════
+class CategorySkillConsistencyTest(APITestCase):
+    def setUp(self):
+        self.provider_user = make_provider('prov_consist', '998909999001')
+        self.cat1 = make_category('Dasturchilik')
+        self.cat2 = make_category('Ustachilik')
+        self.skill1 = Skill.objects.create(name='Python backend', category=self.cat1)
+        self.skill2 = Skill.objects.create(name='Santexnik', category=self.cat2)
+
+    def test_profile_skills_categories_match_category_api(self):
+        """
+        Profil sahifasidagi /services/skills/ dan olinadigan category_name
+        Ustalar sahifasidagi /services/categories/ dan olinadigan name bilan
+        harfma-harf bir xil bo'lishi shart.
+        """
+        cat_resp = self.client.get('/api/services/categories/')
+        self.assertEqual(cat_resp.status_code, 200)
+        category_names = {c['name'] for c in cat_resp.data.get('results', cat_resp.data)}
+
+        skill_resp = self.client.get('/api/services/skills/')
+        self.assertEqual(skill_resp.status_code, 200)
+        skills = skill_resp.data.get('results', skill_resp.data)
+
+        for skill in skills:
+            cat_name = skill.get('category_name')
+            self.assertIn(
+                cat_name, category_names,
+                f"Ko'nikma '{skill['name']}' ga biriktirilgan kategoriya '{cat_name}' "
+                f"kategoriyalar ro'yxatida topilmadi!"
+            )
+
+    def test_provider_with_skill_filtered_by_category_exact_match(self):
+        """
+        Usta profilida Santexnik (Ustachilik) tanlanganda,
+        Ustalar sahifasida 'Ustachilik' kategoriyasi bosilsa usta chiqishi kerak.
+        """
+        self.provider_user.provider_profile.skills.add(self.skill2)
+        r = self.client.get(f'/api/services/providers/?skills__category={self.cat2.id}')
+        self.assertEqual(r.status_code, 200)
+        results = r.data.get('results', r.data)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], self.provider_user.provider_profile.id)
+
+    def test_provider_not_found_in_different_category(self):
+        """
+        Usta 'Ustachilik' ga tegishli bo'lsa, 'Dasturchilik' kategoriyasida chiqmasligi kerak.
+        """
+        self.provider_user.provider_profile.skills.add(self.skill2)
+        r = self.client.get(f'/api/services/providers/?skills__category={self.cat1.id}')
+        self.assertEqual(r.status_code, 200)
+        results = r.data.get('results', r.data)
+        self.assertEqual(len(results), 0)
+
+    def test_category_names_no_extra_whitespace(self):
+        """
+        Barcha kategoriya va ko'nikma nomlarida ortiqcha bo'sh joylar (probellar) bo'lmasligi kerak.
+        """
+        for cat in Category.objects.all():
+            self.assertEqual(cat.name, cat.name.strip(), f"Kategoriya '{cat.name}' da ortiqcha probel bor!")
+        for skill in Skill.objects.all():
+            self.assertEqual(skill.name, skill.name.strip(), f"Ko'nikma '{skill.name}' da ortiqcha probel bor!")
+

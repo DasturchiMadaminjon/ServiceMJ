@@ -166,7 +166,27 @@ DATA = [
 ]
 
 
+def cleanup_obsolete_categories():
+    valid_names = {item["name"] for item in DATA}
+    for cat in list(Category.objects.all()):
+        if cat.name not in valid_names:
+            # Mos keladigan bosh harfli variant bormi? Masalan 'bog'dorchilik' -> 'Bog'dorchilik'
+            matching = Category.objects.filter(name__iexact=cat.name).exclude(id=cat.id).first()
+            if matching:
+                print(f"  [BIRLASHTIRISH] '{cat.name}' -> '{matching.name}' ga birlashtirildi")
+                cat.skills.update(category=matching)
+                cat.delete()
+            elif not cat.skills.exists():
+                print(f"  [O'CHIRILDI] Bo'sh kategoriya: '{cat.name}'")
+                cat.delete()
+
+
 def run():
+    print("=" * 50)
+    print("1. Eskirgan va dublikat kategoriyalarni tozalash...")
+    cleanup_obsolete_categories()
+    print("=" * 50)
+
     created_cats  = 0
     created_skills = 0
     skipped = 0
@@ -190,6 +210,10 @@ def run():
             if skill_created:
                 created_skills += 1
             else:
+                # Agar kategoriya noto'g'ri bo'lib qolgan bo'lsa yangilash
+                if skill.category_id != cat.id:
+                    skill.category = cat
+                    skill.save()
                 skipped += 1
 
     print("\n" + "=" * 50)
@@ -197,7 +221,7 @@ def run():
     print(f"[OK] Yangi ko'nikmalar:   {created_skills}")
     print(f"[--] Allaqachon mavjud:   {skipped}")
     print("=" * 50)
-    print("Seed data muvaffaqiyatli yuklandi!")
+    print("Seed data muvaffaqiyatli yakunlandi!")
 
 
 if __name__ == "__main__":
