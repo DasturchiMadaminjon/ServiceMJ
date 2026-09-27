@@ -18,6 +18,10 @@ schema_view = get_schema_view(
     permission_classes=[permissions.AllowAny],
 )
 
+admin.site.site_header = "Tadbikor.uz Boshqaruv Markazi"
+admin.site.site_title = "Tadbikor.uz Admin"
+admin.site.index_title = "Platforma Nazorati va Biznes Boshqaruvi"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
